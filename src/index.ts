@@ -12,11 +12,8 @@ app.route("/v1", v1Router);
 
 Bun.serve({
 	port: 3000,
-	idleTimeout: 60,
-	fetch() {
-		// Your request handling logic here
-		return new Response("Hello Bun!");
-	},
+	// idleTimeout: 255,
+	fetch: app.fetch,
 });
 
 export default app;
