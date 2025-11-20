@@ -17,6 +17,6 @@ export async function registerUser(payload: IRegisterUserSchema) {
 		if (error instanceof AddUserInDBError) {
 			throw error;
 		}
-		throw new RegisterUserError("Failed to register user", { cause: (error as Error).message });
+		throw new RegisterUserError("Failed to register user", { cause: (error as Error).cause });
 	}
 }

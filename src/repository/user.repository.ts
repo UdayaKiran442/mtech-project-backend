@@ -19,6 +19,6 @@ export async function addUserInDB(payload: { name: string; email: string; passwo
 		await db.insert(users).values(insertPayload);
 		return insertPayload;
 	} catch (error) {
-		throw new AddUserInDBError("Failed to add user in DB", { cause: (error as Error).message });
+		throw new AddUserInDBError("Failed to add user in DB", { cause: (error as Error).cause });
 	}
 }

@@ -12,7 +12,7 @@ app.route("/v1", v1Router);
 
 Bun.serve({
 	port: 3000,
-	// idleTimeout: 255,
+	idleTimeout: 255,
 	fetch: app.fetch,
 });
 
