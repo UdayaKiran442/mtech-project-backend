@@ -2,6 +2,7 @@ import { AddUserInDBError, RegisterUserError } from "../exceptions/user.exceptio
 import { addUserInDB } from "../repository/user.repository";
 import type { IRegisterUserSchema } from "../routes/v1/user.route";
 import { hashPassword } from "../utils/bcrypt.utils";
+import { generateJwtToken } from "../utils/jwt.utils";
 
 export async function registerUser(payload: IRegisterUserSchema) {
 	try {
@@ -12,7 +13,8 @@ export async function registerUser(payload: IRegisterUserSchema) {
 			passwordHash: passwordHash,
 			role: payload.role,
 		});
-		return newUser;
+		const jwtToken = generateJwtToken({ userId: newUser.userId, role: newUser.role });
+		return { newUser, jwtToken };
 	} catch (error) {
 		if (error instanceof AddUserInDBError) {
 			throw error;

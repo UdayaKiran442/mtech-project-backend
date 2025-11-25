@@ -21,8 +21,8 @@ userRoute.post("/register", async (c) => {
 			throw validation.error;
 		}
 		const payload = validation.data;
-		const newUser = await registerUser(payload);
-		return c.json({ success: true, message: "New user successfully registered", newUser });
+		const response = await registerUser(payload);
+		return c.json({ success: true, message: "New user successfully registered", response });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
