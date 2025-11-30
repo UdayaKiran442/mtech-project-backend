@@ -1,7 +1,7 @@
-import { AddUserInDBError, RegisterUserError } from "../exceptions/user.exceptions";
-import { addUserInDB } from "../repository/user.repository";
-import type { IRegisterUserSchema } from "../routes/v1/user.route";
-import { hashPassword } from "../utils/bcrypt.utils";
+import { AddUserInDBError, GetUserByEmailFromDBError, LoginUserError, RegisterUserError } from "../exceptions/user.exceptions";
+import { addUserInDB, getUserByEmailFromDB } from "../repository/user.repository";
+import type { ILoginUserSchema, IRegisterUserSchema } from "../routes/v1/user.route";
+import { comparePassword, hashPassword } from "../utils/bcrypt.utils";
 import { generateJwtToken } from "../utils/jwt.utils";
 
 export async function registerUser(payload: IRegisterUserSchema) {
@@ -20,5 +20,27 @@ export async function registerUser(payload: IRegisterUserSchema) {
 			throw error;
 		}
 		throw new RegisterUserError("Failed to register user", { cause: (error as Error).cause });
+	}
+}
+
+export async function loginUser(payload: ILoginUserSchema) {
+	try {
+		const user = await getUserByEmailFromDB(payload.email);
+		const isValidPassword = await comparePassword({
+			hashedPassword: user.passwordHash,
+			password: payload.password,
+		});
+		if (!isValidPassword) {
+			// throw error
+		}
+		return generateJwtToken({
+			userId: user.userId,
+			role: user.role,
+		});
+	} catch (error) {
+		if (error instanceof GetUserByEmailFromDBError) {
+			throw error;
+		}
+		throw new LoginUserError("Failed to login user", { cause: (error as Error).cause });
 	}
 }
