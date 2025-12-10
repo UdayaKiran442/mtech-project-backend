@@ -31,6 +31,8 @@ export async function getUserByIdFromDB(userId: string) {
 				name: users.name,
 				email: users.email,
 				role: users.role,
+				workspaceId: users.workspaceId,
+				organisationId: users.organisationId,
 			})
 			.from(users)
 			.where(eq(users.userId, userId));
