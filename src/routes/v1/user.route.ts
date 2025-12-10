@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import z from "zod";
 
 import { loginUser, registerUser } from "../../controller/user.controller";
-import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, LoginUserError, RegisterUserError } from "../../exceptions/user.exceptions";
+import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../../exceptions/user.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { getUserByIdFromDB } from "../../repository/user.repository";
 
@@ -55,13 +55,13 @@ userRoute.post("/login", async (c) => {
 		}
 		const payload = validation.data;
 		const token = await loginUser(payload);
-		return c.json({ success: true, message: "New user successfully registered", token });
+		return c.json({ success: true, message: "Login successful", token });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
-		if (error instanceof GetUserByEmailFromDBError || error instanceof LoginUserError) {
+		if (error instanceof GetUserByEmailFromDBError || error instanceof LoginUserError || error instanceof InvalidCredentialsError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to register new user", error: (error as Error).message }, 500);

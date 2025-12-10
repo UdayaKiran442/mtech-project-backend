@@ -1,4 +1,4 @@
-import { AddUserInDBError, GetUserByEmailFromDBError, LoginUserError, RegisterUserError } from "../exceptions/user.exceptions";
+import { AddUserInDBError, GetUserByEmailFromDBError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../exceptions/user.exceptions";
 import { addUserInDB, getUserByEmailFromDB } from "../repository/user.repository";
 import type { ILoginUserSchema, IRegisterUserSchema } from "../routes/v1/user.route";
 import { comparePassword, hashPassword } from "../utils/bcrypt.utils";
@@ -32,6 +32,7 @@ export async function loginUser(payload: ILoginUserSchema) {
 		});
 		if (!isValidPassword) {
 			// throw error
+			throw new InvalidCredentialsError("Invalid password", { cause: "Invalid user email/password" });
 		}
 		return generateJwtToken({
 			userId: user.userId,
