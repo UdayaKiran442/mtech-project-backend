@@ -1,7 +1,7 @@
 import { UpdateUserInDBError } from "../exceptions/user.exceptions";
-import { CreateWorkspaceError, CreateWorkspaceInDBError } from "../exceptions/workspace.exceptions";
+import { CreateWorkspaceError, CreateWorkspaceInDBError, IsWorkspaceUrlUniqueError } from "../exceptions/workspace.exceptions";
 import { updateUserInDB } from "../repository/user.repository";
-import { createWorkspaceInDB } from "../repository/workspace.repository";
+import { checkIfWorkspaceUrlIsUniqueInDB, createWorkspaceInDB } from "../repository/workspace.repository";
 import type { ICreateWorkspaceSchema } from "../routes/v1/workspace.route";
 
 export async function createWorkspace(payload: ICreateWorkspaceSchema) {
@@ -20,5 +20,15 @@ export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 			throw error;
 		}
 		throw new CreateWorkspaceError("Failed to create workspace", { cause: (error as Error).cause });
+	}
+}
+
+export async function isWorkspaceUrlUnique(workspaceUrl: string) {
+	try {
+		// db call to check if workspace url is unique
+		const existingUrl = await checkIfWorkspaceUrlIsUniqueInDB(workspaceUrl);
+		return existingUrl.length === 0;
+	} catch (error) {
+		throw new IsWorkspaceUrlUniqueError("Failed to check if workspace URL is unique", { cause: (error as Error).cause });
 	}
 }

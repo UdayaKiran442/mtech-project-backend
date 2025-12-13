@@ -1,4 +1,5 @@
-import { CreateWorkspaceInDBError } from "../exceptions/workspace.exceptions";
+import { eq } from "drizzle-orm";
+import { CheckIfWorkspaceUrlIsUniqueInDBError, CreateWorkspaceInDBError } from "../exceptions/workspace.exceptions";
 import type { ICreateWorkspaceSchema } from "../routes/v1/workspace.route";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
@@ -15,8 +16,16 @@ export async function createWorkspaceInDB(payload: ICreateWorkspaceSchema) {
 			updatedAt: new Date(),
 		};
 		await db.insert(workspace).values(insertPayload);
-        return insertPayload;
+		return insertPayload;
 	} catch (error) {
 		throw new CreateWorkspaceInDBError("Failed to create workspace in DB", { cause: (error as Error).cause });
+	}
+}
+
+export async function checkIfWorkspaceUrlIsUniqueInDB(workspaceUrl: string) {
+	try {
+		return await db.select().from(workspace).where(eq(workspace.workspaceUrl, workspaceUrl));
+	} catch (error) {
+		throw new CheckIfWorkspaceUrlIsUniqueInDBError("Failed to check if workspace URL is unique in DB", { cause: (error as Error).cause });
 	}
 }

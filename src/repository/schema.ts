@@ -1,4 +1,4 @@
-import { pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
 	userId: varchar("user_id").primaryKey(),
@@ -23,11 +23,17 @@ export const organisation = pgTable("organisation", {
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const workspace = pgTable("workspace", {
-	workspaceId: varchar("workspace_id").primaryKey(),
-	workspaceName: varchar("workspace_name").notNull(),
-	workspaceUrl: varchar("workspace_url").notNull(),
-	organisationId: varchar("organisation_id").notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const workspace = pgTable(
+	"workspace",
+	{
+		workspaceId: varchar("workspace_id").primaryKey(),
+		workspaceName: varchar("workspace_name").notNull(),
+		workspaceUrl: varchar("workspace_url").notNull().unique(),
+		organisationId: varchar("organisation_id").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(workspace) => ({
+		workspaceUrlIdx: index("workspace_url_idx").on(workspace.workspaceUrl),
+	}),
+);
