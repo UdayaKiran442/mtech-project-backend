@@ -15,6 +15,13 @@
       "when": 1763615788694,
       "tag": "0001_overrated_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765607992549,
+      "tag": "0002_lame_odin",
+      "breakpoints": true
     }
   ]
 }

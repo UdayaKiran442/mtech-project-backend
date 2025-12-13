@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
-import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError } from "../exceptions/user.exceptions";
+
+import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, UpdateUserInDBError } from "../exceptions/user.exceptions";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users } from "./schema";
@@ -48,5 +49,17 @@ export async function getUserByEmailFromDB(email: string) {
 		return user[0];
 	} catch (error) {
 		throw new GetUserByEmailFromDBError("Failed to get user by email from db", { cause: (error as Error).cause });
+	}
+}
+
+export async function updateUserInDB(payload: { userId: string; name?: string; organisationId?: string; workspaceId?: string }) {
+	try {
+		const updatedPayload = {
+			...payload,
+			updatedAt: new Date(),
+		};
+		await db.update(users).set(updatedPayload).where(eq(users.userId, payload.userId));
+	} catch (error) {
+		throw new UpdateUserInDBError("Failed to update user in DB", { cause: (error as Error).cause });
 	}
 }
