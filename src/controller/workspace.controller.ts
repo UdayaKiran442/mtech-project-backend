@@ -14,6 +14,7 @@ export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 			workspaceId: newWorkspace.workspaceId,
 			organisationId: payload.organisationId,
 		});
+		return newWorkspace;
 	} catch (error) {
 		if (error instanceof CreateWorkspaceInDBError || error instanceof UpdateUserInDBError) {
 			throw error;
