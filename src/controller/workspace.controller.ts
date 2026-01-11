@@ -1,8 +1,8 @@
 import { UpdateUserInDBError } from "../exceptions/user.exceptions";
-import { CreateWorkspaceError, CreateWorkspaceInDBError, IsWorkspaceUrlUniqueError } from "../exceptions/workspace.exceptions";
-import { updateUserInDB } from "../repository/user.repository";
+import { CreateWorkspaceError, CreateWorkspaceInDBError, FetchWorkspaceMembersError, IsWorkspaceUrlUniqueError } from "../exceptions/workspace.exceptions";
+import { fetchWorkspaceMembersFromDB, updateUserInDB } from "../repository/user.repository";
 import { checkIfWorkspaceUrlIsUniqueInDB, createWorkspaceInDB } from "../repository/workspace.repository";
-import type { ICreateWorkspaceSchema } from "../routes/v1/workspace.route";
+import type { ICreateWorkspaceSchema, IFetchWorkspaceMembersSchema } from "../routes/v1/workspace.route";
 
 export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 	try {
@@ -30,5 +30,13 @@ export async function isWorkspaceUrlUnique(workspaceUrl: string) {
 		return existingUrl.length === 0;
 	} catch (error) {
 		throw new IsWorkspaceUrlUniqueError("Failed to check if workspace URL is unique", { cause: (error as Error).cause });
+	}
+}
+
+export async function fetchWorkspaceMembers(payload: IFetchWorkspaceMembersSchema) {
+	try {
+		return await fetchWorkspaceMembersFromDB(payload.workspaceId);
+	} catch (error) {
+		throw new FetchWorkspaceMembersError("Failed to fetch workspace members", { cause: (error as Error).cause });
 	}
 }

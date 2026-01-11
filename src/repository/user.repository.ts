@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, UpdateUserInDBError } from "../exceptions/user.exceptions";
+import { AddUserInDBError, FetchWorkspaceMembersInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, UpdateUserInDBError } from "../exceptions/user.exceptions";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users } from "./schema";
@@ -61,5 +61,14 @@ export async function updateUserInDB(payload: { userId: string; name?: string; o
 		await db.update(users).set(updatedPayload).where(eq(users.userId, payload.userId));
 	} catch (error) {
 		throw new UpdateUserInDBError("Failed to update user in DB", { cause: (error as Error).cause });
+	}
+}
+
+export async function fetchWorkspaceMembersFromDB(workspaceId: string) {
+	try {
+		const members = await db.select().from(users).where(eq(users.workspaceId, workspaceId));
+		return members[0];
+	} catch (error) {
+		throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).cause });
 	}
 }
