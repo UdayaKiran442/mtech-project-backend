@@ -5,9 +5,7 @@ export const users = pgTable("users", {
 	name: varchar("name").notNull(),
 	email: varchar("email").notNull().unique(),
 	passwordHash: varchar("password_hash").notNull(),
-	workspaceId: varchar("workspace_id"),
 	organisationId: varchar("organisation_id"),
-	role: varchar("role").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -37,3 +35,15 @@ export const workspace = pgTable(
 		workspaceUrlIdx: index("workspace_url_idx").on(workspace.workspaceUrl),
 	}),
 );
+
+export const workspaceMembers = pgTable("workspace_members", {
+	memberId: varchar("member_id").primaryKey(),
+	workspaceId: varchar("workspace_id").notNull(),
+	userId: varchar("user_id").notNull(),
+	role: varchar("role").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (workspaceMembers) => ({
+	workspaceIdIdx: index("workspace_id_idx").on(workspaceMembers.workspaceId),
+	userIdIdx: index("user_id_idx").on(workspaceMembers.userId),
+}));

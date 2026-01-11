@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import z from "zod";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { createWorkspace, fetchWorkspaceMembers, isWorkspaceUrlUnique } from "../../controller/workspace.controller";
-import { FetchWorkspaceMembersInDBError, UpdateUserInDBError } from "../../exceptions/user.exceptions";
+import { UpdateUserInDBError } from "../../exceptions/user.exceptions";
 import { CheckIfWorkspaceUrlIsUniqueInDBError, CreateWorkspaceError, CreateWorkspaceInDBError, FetchWorkspaceMembersError, IsWorkspaceUrlUniqueError } from "../../exceptions/workspace.exceptions";
+import { AddWorkspaceMemberInDBError, FetchWorkspaceMembersInDBError } from "../../exceptions/workspaceMember.exceptions";
 
 const workspaceRoute = new Hono();
 
@@ -32,7 +33,7 @@ workspaceRoute.post("/create", authMiddleware, async (c) => {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
-		if (error instanceof CreateWorkspaceInDBError || error instanceof UpdateUserInDBError || error instanceof CreateWorkspaceError) {
+		if (error instanceof CreateWorkspaceInDBError || error instanceof UpdateUserInDBError || error instanceof CreateWorkspaceError || error instanceof AddWorkspaceMemberInDBError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to create workspace", error: (error as Error).message }, 500);

@@ -1,19 +1,17 @@
 import { eq } from "drizzle-orm";
 
-import { AddUserInDBError, FetchWorkspaceMembersInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, UpdateUserInDBError } from "../exceptions/user.exceptions";
+import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, UpdateUserInDBError } from "../exceptions/user.exceptions";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users } from "./schema";
 
-export async function addUserInDB(payload: { name: string; email: string; passwordHash: string; role: string; workspaceId?: string; organisationId?: string }) {
+export async function addUserInDB(payload: { name: string; email: string; passwordHash: string; organisationId?: string }) {
 	try {
 		const insertPayload = {
 			userId: `user_${generateNanoId()}`,
 			email: payload.email,
 			name: payload.name,
 			passwordHash: payload.passwordHash,
-			role: payload.role,
-			workspaceId: payload.workspaceId,
 			organisationId: payload.organisationId,
 			createdAt: new Date(),
 			updatedAt: new Date(),
@@ -29,10 +27,9 @@ export async function getUserByIdFromDB(userId: string) {
 	try {
 		const user = await db
 			.select({
+				userId: users.userId,
 				name: users.name,
 				email: users.email,
-				role: users.role,
-				workspaceId: users.workspaceId,
 				organisationId: users.organisationId,
 			})
 			.from(users)
@@ -52,7 +49,7 @@ export async function getUserByEmailFromDB(email: string) {
 	}
 }
 
-export async function updateUserInDB(payload: { userId: string; name?: string; organisationId?: string; workspaceId?: string }) {
+export async function updateUserInDB(payload: { userId: string; name?: string; organisationId?: string }) {
 	try {
 		const updatedPayload = {
 			...payload,
@@ -61,14 +58,5 @@ export async function updateUserInDB(payload: { userId: string; name?: string; o
 		await db.update(users).set(updatedPayload).where(eq(users.userId, payload.userId));
 	} catch (error) {
 		throw new UpdateUserInDBError("Failed to update user in DB", { cause: (error as Error).cause });
-	}
-}
-
-export async function fetchWorkspaceMembersFromDB(workspaceId: string) {
-	try {
-		const members = await db.select().from(users).where(eq(users.workspaceId, workspaceId));
-		return members[0];
-	} catch (error) {
-		throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).cause });
 	}
 }

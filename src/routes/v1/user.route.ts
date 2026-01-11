@@ -12,7 +12,6 @@ const RegisterUserSchema = z.object({
 	email: z.string(),
 	name: z.string(),
 	password: z.string(),
-	role: z.string(),
 });
 
 export type IRegisterUserSchema = z.infer<typeof RegisterUserSchema>;

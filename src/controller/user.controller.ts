@@ -11,9 +11,8 @@ export async function registerUser(payload: IRegisterUserSchema) {
 			email: payload.email,
 			name: payload.name,
 			passwordHash: passwordHash,
-			role: payload.role,
 		});
-		const jwtToken = generateJwtToken({ userId: newUser.userId, role: newUser.role });
+		const jwtToken = generateJwtToken({ userId: newUser.userId });
 		return { newUser, jwtToken };
 	} catch (error) {
 		if (error instanceof AddUserInDBError) {
@@ -36,7 +35,6 @@ export async function loginUser(payload: ILoginUserSchema) {
 		}
 		return generateJwtToken({
 			userId: user.userId,
-			role: user.role,
 		});
 	} catch (error) {
 		if (error instanceof GetUserByEmailFromDBError) {
