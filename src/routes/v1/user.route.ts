@@ -5,6 +5,8 @@ import { loginUser, registerUser } from "../../controller/user.controller";
 import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../../exceptions/user.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { getUserByIdFromDB } from "../../repository/user.repository";
+import { getUserWorkspacesFromDB } from "../../repository/workspaceMembers.repository";
+import { GetUserWorkspacesFromDBError } from "../../exceptions/workspaceMember.exceptions";
 
 const userRoute = new Hono();
 
@@ -70,10 +72,11 @@ userRoute.post("/login", async (c) => {
 userRoute.get("/profile", authMiddleware, async (c) => {
 	try {
 		const { userId } = c.get("user");
-		const user = await getUserByIdFromDB(userId);
-		return c.json({ success: true, user });
+		const [user, workspaces] = await Promise.all([getUserByIdFromDB(userId), getUserWorkspacesFromDB(userId)]);
+
+		return c.json({ success: true, user, workspace: workspaces?.[0] });
 	} catch (error) {
-		if (error instanceof GetUserByIdFromDBError) {
+		if (error instanceof GetUserByIdFromDBError || error instanceof GetUserWorkspacesFromDBError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to get user profile", error: (error as Error).message }, 500);

@@ -17,3 +17,13 @@ export class FetchWorkspaceMembersInDBError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class GetUserWorkspacesFromDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "GetUserWorkspacesFromDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

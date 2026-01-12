@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { AddWorkspaceMemberInDBError, FetchWorkspaceMembersInDBError } from "../exceptions/workspaceMember.exceptions";
+import { AddWorkspaceMemberInDBError, FetchWorkspaceMembersInDBError, GetUserWorkspacesFromDBError } from "../exceptions/workspaceMember.exceptions";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
-import { users, workspaceMembers } from "./schema";
+import { users, workspace, workspaceMembers } from "./schema";
 
 export async function addWorkspaceMemberInDB(payload: {workspaceId: string; userId: string; role: string}){
     try {
@@ -36,5 +36,19 @@ export async function getWorkspaceMembersFromDB(workspaceId: string) {
         return members[0];
     } catch (error) {
         throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).cause });
+    }
+}
+
+export async function getUserWorkspacesFromDB(userId: string) {
+    try {
+        return await db.select({
+            workspaceName: workspace.workspaceName,
+            workspaceId: workspace.workspaceId,
+            workspaceUrl: workspace.workspaceUrl,
+            memberId: workspaceMembers.memberId,
+            role: workspaceMembers.role,
+        }).from(workspaceMembers).innerJoin(workspace, eq(workspaceMembers.workspaceId, workspace.workspaceId)).where(eq(workspaceMembers.userId, userId));
+    } catch (error) {
+        throw new GetUserWorkspacesFromDBError("Failed to fetch user workspaces from DB", { cause: (error as Error).cause });
     }
 }
