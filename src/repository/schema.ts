@@ -1,4 +1,4 @@
-import { index, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
 	userId: varchar("user_id").primaryKey(),
@@ -47,3 +47,13 @@ export const workspaceMembers = pgTable("workspace_members", {
 	workspaceIdIdx: index("workspace_id_idx").on(workspaceMembers.workspaceId),
 	userIdIdx: index("user_id_idx").on(workspaceMembers.userId),
 }));
+
+export const invitations = pgTable("invitations", {
+	invitationId: varchar("invitation_id").primaryKey(),
+	email: varchar("email").notNull(),
+	workspaceId: varchar("workspace_id").notNull(),
+	organisationId: varchar("organisation_id").notNull(),
+	invitedBy: varchar("invited_by").notNull(),
+	accepted: boolean("accepted").default(false).notNull(),
+	invitedAt: timestamp("invited_at").defaultNow().notNull(),
+})
