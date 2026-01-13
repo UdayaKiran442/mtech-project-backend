@@ -8,7 +8,9 @@ export const users = pgTable("users", {
 	organisationId: varchar("organisation_id"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (users) => ({
+	emailIdx: index("email_idx").on(users.email),
+}));
 
 export const organisation = pgTable("organisation", {
 	organisationId: varchar("organisation_id").primaryKey(),
@@ -55,5 +57,6 @@ export const invitations = pgTable("invitations", {
 	organisationId: varchar("organisation_id").notNull(),
 	invitedBy: varchar("invited_by").notNull(),
 	accepted: boolean("accepted").default(false).notNull(),
+	newUser: boolean("new_user").notNull(),
 	invitedAt: timestamp("invited_at").defaultNow().notNull(),
 })
