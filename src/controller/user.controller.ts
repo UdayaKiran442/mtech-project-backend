@@ -1,5 +1,7 @@
-import { AddUserInDBError, GetUserByEmailFromDBError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../exceptions/user.exceptions";
+import { AddUserInDBError, GetUserByEmailFromDBError, GetUserWorkspacesError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../exceptions/user.exceptions";
+import { GetUserWorkspacesFromDBError } from "../exceptions/workspaceMember.exceptions";
 import { addUserInDB, getUserByEmailFromDB } from "../repository/user.repository";
+import { getUserWorkspacesFromDB } from "../repository/workspaceMembers.repository";
 import type { ILoginUserSchema, IRegisterUserSchema } from "../routes/v1/user.route";
 import { comparePassword, hashPassword } from "../utils/bcrypt.utils";
 import { generateJwtToken } from "../utils/jwt.utils";
@@ -41,5 +43,16 @@ export async function loginUser(payload: ILoginUserSchema) {
 			throw error;
 		}
 		throw new LoginUserError("Failed to login user", { cause: (error as Error).cause });
+	}
+}
+
+export async function getUserWorkspaces(userId: string){
+	try {
+		return await getUserWorkspacesFromDB(userId);
+	} catch (error) {
+		if (error instanceof GetUserWorkspacesFromDBError){
+			throw error;
+		}
+		throw new GetUserWorkspacesError("Failed to get user workspaces", { cause: (error as Error).cause });
 	}
 }

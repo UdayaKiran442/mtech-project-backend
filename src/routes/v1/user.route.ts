@@ -1,8 +1,16 @@
 import { Hono } from "hono";
 import z from "zod";
 
-import { loginUser, registerUser } from "../../controller/user.controller";
-import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, InvalidCredentialsError, LoginUserError, RegisterUserError } from "../../exceptions/user.exceptions";
+import { getUserWorkspaces, loginUser, registerUser } from "../../controller/user.controller";
+import {
+	AddUserInDBError,
+	GetUserByEmailFromDBError,
+	GetUserByIdFromDBError,
+	GetUserWorkspacesError,
+	InvalidCredentialsError,
+	LoginUserError,
+	RegisterUserError,
+} from "../../exceptions/user.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { getUserByIdFromDB } from "../../repository/user.repository";
 import { getUserWorkspacesFromDB } from "../../repository/workspaceMembers.repository";
@@ -80,6 +88,19 @@ userRoute.get("/profile", authMiddleware, async (c) => {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to get user profile", error: (error as Error).message }, 500);
+	}
+});
+
+userRoute.get("/workspaces", authMiddleware, async (c) => {
+	try {
+		const { userId } = c.get("user");
+		const workspaces = await getUserWorkspaces(userId);
+		return c.json({ success: true, workspaces });
+	} catch (error) {
+		if (error instanceof GetUserWorkspacesFromDBError || error instanceof GetUserWorkspacesError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 500);
+		}
+		return c.json({ success: false, message: "Failed to get user workspaces", error: (error as Error).message }, 500);
 	}
 });
 
