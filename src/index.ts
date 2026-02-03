@@ -2,12 +2,19 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import v1Router from "./routes";
+import { convertTextToChunkService, extractTextFromS3FileService } from "./services/langchain.service";
 
 const app = new Hono();
 
 app.get("/", (c) => {
 	return c.text("Hello Hono!");
 });
+
+app.get("/test", async (c) => {
+	const result = await extractTextFromS3FileService("default-workspace/MWjrgU-4L8lZoRirlMstG.pdf")
+	const chunks = await convertTextToChunkService(result);
+	return c.json({ success: true, data: chunks });
+})
 
 app.use(
 	"/*",

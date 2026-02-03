@@ -23,9 +23,11 @@ export async function uploadFileToS3Service({ bucketName, key, filePath, content
 
 		await s3.send(command);
 
-		return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+		return {
+			url: `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+			key: key,
+		};
 	} catch (error) {
-		console.log("Error uploading to S3:", error);
 		throw new UploadFileToS3ServiceError("Failed to upload file to AWS S3", { cause: (error as Error).message });
 	}
 }

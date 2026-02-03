@@ -60,3 +60,13 @@ export const invitations = pgTable("invitations", {
 	newUser: boolean("new_user").notNull(),
 	invitedAt: timestamp("invited_at").defaultNow().notNull(),
 })
+
+export const knowledgeBase = pgTable("konwledge_base", {
+	fileId: varchar("file_id").primaryKey(),
+	workspaceId: varchar("workspace_id").notNull(),
+	fileUrl: varchar("file_url").notNull(),
+	uploadedBy: varchar("uploaded_by").notNull(), // id of the person who uploaded the file
+	uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),	
+}, (knowledgeBase) => ({
+	workspaceIdIdx: index("workspace_id_idx").on(knowledgeBase.workspaceId),
+}))

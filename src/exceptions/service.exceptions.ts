@@ -37,3 +37,23 @@ export class UploadFileToAWSError extends Error {
         Error.captureStackTrace(this, this.constructor);
     }
 }
+
+export class ExtractTextFromS3FileServiceError extends Error {
+    public cause?: unknown;
+    constructor(message: string, options?: { cause?: unknown }) {
+        super(message);
+        this.name = "ExtractTextFromS3FileServiceError";
+        if (options?.cause) this.cause = options.cause;
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+
+export class ConvertTextToChunkServiceError extends Error {
+    public cause?: unknown;
+    constructor(message: string, options?: { cause?: unknown }) {
+        super(message);
+        this.name = "ConvertTextToChunkServiceError";
+        if (options?.cause) this.cause = options.cause;
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
