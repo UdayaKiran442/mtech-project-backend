@@ -65,6 +65,7 @@ export const knowledgeBase = pgTable("konwledge_base", {
 	fileId: varchar("file_id").primaryKey(),
 	workspaceId: varchar("workspace_id").notNull(),
 	fileUrl: varchar("file_url").notNull(),
+	key: varchar("key").notNull(), // s3 key of the file
 	uploadedBy: varchar("uploaded_by").notNull(), // id of the person who uploaded the file
 	uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),	
 }, (knowledgeBase) => ({

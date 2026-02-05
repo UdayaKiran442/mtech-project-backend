@@ -1,12 +1,17 @@
 import { WORKSPACE_MEMBER_ROLES } from "../constants/workspaceMember.constants";
+import { AddKnowledgeBaseInDBError } from "../exceptions/knowledgeBase.exceptions";
+import { ConvertTextToChunkServiceError, ConvertTextToEmbeddingsServiceError, ExtractTextFromS3FileServiceError, UpsertEmbeddingsServiceError } from "../exceptions/service.exceptions";
 import { UpdateUserInDBError } from "../exceptions/user.exceptions";
 import { AddKnowledgeToWorkspaceError, CreateWorkspaceError, CreateWorkspaceInDBError, FetchWorkspaceMembersError, IsWorkspaceUrlUniqueError } from "../exceptions/workspace.exceptions";
 import { AddWorkspaceMemberInDBError } from "../exceptions/workspaceMember.exceptions";
+import { addKnowledgeBaseInDB } from "../repository/knowledgeBase.repository";
 import { updateUserInDB } from "../repository/user.repository";
 import { checkIfWorkspaceUrlIsUniqueInDB, createWorkspaceInDB } from "../repository/workspace.repository";
 import { addWorkspaceMemberInDB, getWorkspaceMembersFromDB } from "../repository/workspaceMembers.repository";
 import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IFetchWorkspaceMembersSchema } from "../routes/v1/workspace.route";
 import { convertTextToChunkService, extractTextFromS3FileService } from "../services/langchain.service";
+import { upsertEmbeddingsService } from "../services/pinecone.service";
+import { convertTextToEmbeddingsService } from "../services/python.service";
 
 export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 	try {
@@ -56,12 +61,32 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 		const text = await extractTextFromS3FileService(payload.key);
 		// split text into chunks
 		const textChunks = await convertTextToChunkService(text);
-		console.log("Text Chunks: ", textChunks);
-		
-		// convert into embeddings
 
+		// convert into embeddings
+		const embeddings = await convertTextToEmbeddingsService(textChunks);
 		// store in vector db and relational db
+		await Promise.all([
+			upsertEmbeddingsService({
+				metadata: { workspaceId: payload.workspaceId, uploadedBy: payload.uploadedBy },
+				vectors: embeddings.embeddings,
+			}),
+			addKnowledgeBaseInDB({
+				workspaceId: payload.workspaceId,
+				uploadedBy: payload.uploadedBy,
+				fileUrl: payload.fileUrl,
+				key: payload.key,
+			}),
+		]);
 	} catch (error) {
+		if (
+			error instanceof ExtractTextFromS3FileServiceError ||
+			error instanceof ConvertTextToChunkServiceError ||
+			error instanceof ConvertTextToEmbeddingsServiceError ||
+			error instanceof UpsertEmbeddingsServiceError ||
+			error instanceof AddKnowledgeBaseInDBError
+		) {
+			throw error;
+		}
 		throw new AddKnowledgeToWorkspaceError("Failed to add knowledge to workspace", { cause: (error as Error).message });
 	}
 }
