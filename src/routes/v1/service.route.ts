@@ -18,12 +18,12 @@ serviceRoute.post("/gcp/upload", async (c) => {
 	}
 });
 
-
 serviceRoute.post("/aws/upload", async (c) => {
 	try {
 		const payload = await c.req.formData();
+		const workspaceId = payload.get("workspaceId") as string;
 		const file = payload.get("file") as File;
-		const uploadLink = await uploadFileToAWS({ file, workspaceId: "default-workspace" });
+		const uploadLink = await uploadFileToAWS({ file, workspaceId });
 		return c.json({ success: true, uploadLink });
 	} catch (error) {
 		if (error instanceof UploadFileToAWSError || error instanceof UploadFileToS3ServiceError) {
