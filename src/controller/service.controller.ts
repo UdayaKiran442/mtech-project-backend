@@ -34,7 +34,8 @@ export async function uploadFileToAWS(payload: { file: File; workspaceId: string
 		const fileBuffer = Buffer.from(fileArrayBuffer);
 		filePath = path.resolve("file.pdf");
 		fs.writeFileSync(filePath, fileBuffer);
-		const fileName = `${generateNanoId()}.pdf`;
+		const name = payload.file.name.split(".pdf")[0];
+		const fileName = `${name}-${generateNanoId()}.pdf`;
 		return await uploadFileToS3Service({
 			bucketName: process.env.AWS_S3_BUCKET_NAME ?? "dummy",
 			key: `${payload.workspaceId}/${fileName}`,
