@@ -1,6 +1,6 @@
-import { S3, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import * as fs from "fs";
-import { UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
+import { FetchDocumentsFromS3ServiceError, UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
 
 const s3 = new S3({
 	region: process.env.AWS_REGION,
@@ -29,5 +29,26 @@ export async function uploadFileToS3Service({ bucketName, key, filePath, content
 		};
 	} catch (error) {
 		throw new UploadFileToS3ServiceError("Failed to upload file to AWS S3", { cause: (error as Error).message });
+	}
+}
+
+export async function fetchDocumentsFromS3Service(workspaceId: string) {
+	try {
+		const params = {
+			Bucket: process.env.AWS_S3_BUCKET_NAME ?? "dummy",
+			Prefix: `${workspaceId}/`,
+		};
+		const command = new ListObjectsV2Command(params);
+		const response = await s3.send(command);
+		const documents = response.Contents?.map((item) => ({
+			key: item.Key,
+			url: `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${item.Key}`,
+			size: item.Size,
+			lastModified: item.LastModified,
+			type: item.Key?.endsWith(".pdf") ? "pdf" : "other",
+		}));
+		return documents ?? [];
+	} catch (error) {
+		throw new FetchDocumentsFromS3ServiceError("Failed to fetch documents from AWS S3", { cause: (error as Error).message });
 	}
 }

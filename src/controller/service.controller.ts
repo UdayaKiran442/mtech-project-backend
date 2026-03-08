@@ -2,8 +2,9 @@ import * as fs from "fs";
 import * as path from "path";
 import { generateNanoId } from "../utils/nano.utils";
 import { uploadFileToGCPService } from "../services/gcp.service";
-import { UploadFileToAWSError, UploadFileToGCPError, UploadFileToGCPServiceError, UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
-import { uploadFileToS3Service } from "../services/aws.service";
+import { FetchDocumentsFromAWSError, FetchDocumentsFromS3ServiceError, UploadFileToAWSError, UploadFileToGCPError, UploadFileToGCPServiceError, UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
+import { fetchDocumentsFromS3Service, uploadFileToS3Service } from "../services/aws.service";
+import type { IAWSFetchDocuments } from "../routes/v1/service.route";
 
 export async function uploadFileToGCP(payload: { file: File }) {
 	let filePath = "";
@@ -51,5 +52,16 @@ export async function uploadFileToAWS(payload: { file: File; workspaceId: string
 		if (filePath) {
 			fs.unlinkSync(filePath);
 		}
+	}
+}
+
+export async function fetchDocumentsFromAWS(payload: IAWSFetchDocuments) {
+	try {
+		return fetchDocumentsFromS3Service(payload.workspaceId);
+	} catch (error) {
+		if (error instanceof FetchDocumentsFromS3ServiceError) {
+			throw error;
+		}
+		throw new FetchDocumentsFromAWSError("Failed to fetch documents from AWS S3", { cause: (error as Error).message });
 	}
 }
