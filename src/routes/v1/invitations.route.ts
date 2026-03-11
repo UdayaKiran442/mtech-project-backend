@@ -4,6 +4,7 @@ import { authMiddleware } from "../../middleware/authentication.middleware";
 import { acceptInvitation, inviteUserToWorkspace } from "../../controller/invitations.controller";
 import { AcceptInvitationError, AcceptInvitationInDBError, AddInvitaitonInDBError, GetInvitationByIdFromDBError, InviteUserToWorkspaceError } from "../../exceptions/invitations.exceptions";
 import { NotFoundError } from "../../exceptions/common.exceptions";
+import { AddWorkspaceMemberInDBError } from "../../exceptions/workspaceMember.exceptions";
 
 const invitationsRoute = new Hono();
 
@@ -65,7 +66,13 @@ invitationsRoute.post("/accept-invitation", authMiddleware, async (c) => {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
-		if (error instanceof GetInvitationByIdFromDBError || error instanceof AcceptInvitationInDBError || error instanceof AcceptInvitationError || error instanceof NotFoundError) {
+		if (
+			error instanceof GetInvitationByIdFromDBError ||
+			error instanceof AcceptInvitationInDBError ||
+			error instanceof AcceptInvitationError ||
+			error instanceof NotFoundError ||
+			error instanceof AddWorkspaceMemberInDBError
+		) {
 			return c.json({ success: false, error: error.name, message: error.message }, 500);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);

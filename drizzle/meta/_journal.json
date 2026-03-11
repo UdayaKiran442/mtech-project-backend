@@ -43,6 +43,13 @@
       "when": 1768133792745,
       "tag": "0005_old_gressill",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773210366987,
+      "tag": "0006_tiny_sentinel",
+      "breakpoints": true
     }
   ]
 }

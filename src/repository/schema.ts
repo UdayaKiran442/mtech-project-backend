@@ -46,7 +46,7 @@ export const workspaceMembers = pgTable("workspace_members", {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (workspaceMembers) => ({
-	workspaceIdIdx: index("workspace_id_idx").on(workspaceMembers.workspaceId),
+	workspaceIdIdx: index("workspace_id_idx_members").on(workspaceMembers.workspaceId),
 	userIdIdx: index("user_id_idx").on(workspaceMembers.userId),
 }));
 
@@ -69,5 +69,5 @@ export const knowledgeBase = pgTable("konwledge_base", {
 	uploadedBy: varchar("uploaded_by").notNull(), // id of the person who uploaded the file
 	uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),	
 }, (knowledgeBase) => ({
-	workspaceIdIdx: index("workspace_id_idx").on(knowledgeBase.workspaceId),
+	workspaceIdIdx: index("workspace_id_idx_knowledge_base").on(knowledgeBase.workspaceId),
 }))
