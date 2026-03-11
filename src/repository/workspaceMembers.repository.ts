@@ -23,7 +23,7 @@ export async function addWorkspaceMemberInDB(payload: {workspaceId: string; user
 
 export async function getWorkspaceMembersFromDB(workspaceId: string) {
     try {
-        const members = await db.select(
+        return await db.select(
             {
                 memberId: workspaceMembers.memberId,
                 workspaceId: workspaceMembers.workspaceId,
@@ -33,7 +33,6 @@ export async function getWorkspaceMembersFromDB(workspaceId: string) {
                 email: users.email,
             }
         ).from(workspaceMembers).where(eq(workspaceMembers.workspaceId, workspaceId)).leftJoin(users, eq(workspaceMembers.userId, users.userId));
-        return members[0];
     } catch (error) {
         throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).cause });
     }
