@@ -71,3 +71,34 @@ export const knowledgeBase = pgTable("konwledge_base", {
 }, (knowledgeBase) => ({
 	workspaceIdIdx: index("workspace_id_idx_knowledge_base").on(knowledgeBase.workspaceId),
 }))
+
+export const conversations = pgTable("conversations", {
+	conversationId: varchar("conversation_id").primaryKey(),
+	type: varchar("type").notNull(), // "dm" or "group"
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const conversationMembers = pgTable("conversation_members", {
+	memberId: varchar("member_id").primaryKey(),
+	conversationId: varchar("conversation_id").notNull(),
+	groupId: varchar("group_id"), // null for dm, group id for group chat
+	participant1Id: varchar("participant1_id").notNull(),
+	participant2Id: varchar("participant2_id"), // null for group chat
+	joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (conversationMembers) => ({
+	conversationIdIdx: index("conversation_id_idx_conversation_members").on(conversationMembers.conversationId),
+	participant1IdIdx: index("participant1_id_idx_conversation_members").on(conversationMembers.participant1Id),
+	participant2IdIdx: index("participant2_id_idx_conversation_members").on(conversationMembers.participant2Id),
+	groupIdIdx: index("group_id_idx_conversation_members").on(conversationMembers.groupId),
+}))
+
+export const messages = pgTable("messages", {
+	messageId: varchar("message_id").primaryKey(),
+	conversationId: varchar("conversation_id").notNull(),
+	senderId: varchar("sender_id").notNull(),
+	text: varchar("text").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (messages) => ({
+	conversationIdIdx: index("conversation_id_idx_messages").on(messages.conversationId),
+	senderIdIdx: index("sender_id_idx_messages").on(messages.senderId),
+}))
