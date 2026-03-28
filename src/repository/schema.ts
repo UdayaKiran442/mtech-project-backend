@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, primaryKey, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
 	userId: varchar("user_id").primaryKey(),
@@ -79,18 +79,14 @@ export const conversations = pgTable("conversations", {
 })
 
 export const conversationMembers = pgTable("conversation_members", {
-	memberId: varchar("member_id").primaryKey(),
 	conversationId: varchar("conversation_id").notNull(),
-	groupId: varchar("group_id"), // null for dm, group id for group chat
-	participant1Id: varchar("participant1_id").notNull(),
-	participant2Id: varchar("participant2_id"), // null for group chat
+	userId: varchar("user_id").notNull(),
 	joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (conversationMembers) => ({
 	conversationIdIdx: index("conversation_id_idx_conversation_members").on(conversationMembers.conversationId),
-	participant1IdIdx: index("participant1_id_idx_conversation_members").on(conversationMembers.participant1Id),
-	participant2IdIdx: index("participant2_id_idx_conversation_members").on(conversationMembers.participant2Id),
-	groupIdIdx: index("group_id_idx_conversation_members").on(conversationMembers.groupId),
-}))
+	userIdIdx: index("user_id_idx_conversation_members").on(conversationMembers.userId),
+	primaryKey: primaryKey({columns: [conversationMembers.conversationId, conversationMembers.userId]})
+}))	
 
 export const messages = pgTable("messages", {
 	messageId: varchar("message_id").primaryKey(),
