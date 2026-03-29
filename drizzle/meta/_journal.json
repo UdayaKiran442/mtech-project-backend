@@ -50,6 +50,13 @@
       "when": 1773210366987,
       "tag": "0006_tiny_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774693139350,
+      "tag": "0007_true_whizzer",
+      "breakpoints": true
     }
   ]
 }

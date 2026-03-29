@@ -5,6 +5,7 @@ import organisationRoute from "./v1/organisation.route";
 import workspaceRoute from "./v1/workspace.route";
 import serviceRoute from "./v1/service.route";
 import invitationsRoute from "./v1/invitations.route";
+import chatRoute from "./v1/chat.route";
 
 const v1Router = new Hono();
 
@@ -13,5 +14,6 @@ v1Router.route("/organisation", organisationRoute);
 v1Router.route("/workspace", workspaceRoute);
 v1Router.route("/service", serviceRoute);
 v1Router.route("/invitations", invitationsRoute);
+v1Router.route("/chat", chatRoute);
 
 export default v1Router;
