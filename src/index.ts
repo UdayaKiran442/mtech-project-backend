@@ -9,7 +9,7 @@ import { upsertEmbeddingsService } from "./services/pinecone.service";
 const app = new Hono();
 
 app.get("/", (c) => {
-	return c.text("Hello Hono!");
+	return c.text("Hello Hono! From CI CD pipeline");
 });
 
 app.get("/test", async (c) => {
