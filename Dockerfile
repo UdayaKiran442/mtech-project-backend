@@ -1,4 +1,4 @@
-FROM --platform=arm64 oven/bun:latest AS builder
+FROM oven/bun:latest AS builder
 
 WORKDIR /src
 COPY . .
