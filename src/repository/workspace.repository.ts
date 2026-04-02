@@ -5,6 +5,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { workspace } from "./schema";
 
+// Function to create a workspace in the database
 export async function createWorkspaceInDB(payload: ICreateWorkspaceSchema) {
 	try {
 		const insertPayload = {
@@ -22,6 +23,7 @@ export async function createWorkspaceInDB(payload: ICreateWorkspaceSchema) {
 	}
 }
 
+// Function to check if a workspace URL is unique in the database
 export async function checkIfWorkspaceUrlIsUniqueInDB(workspaceUrl: string) {
 	try {
 		return await db.select().from(workspace).where(eq(workspace.workspaceUrl, workspaceUrl));

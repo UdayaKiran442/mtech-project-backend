@@ -5,6 +5,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users } from "./schema";
 
+// Function to add a user to the database
 export async function addUserInDB(payload: { name: string; email: string; passwordHash: string; organisationId?: string }) {
 	try {
 		const insertPayload = {
@@ -23,6 +24,7 @@ export async function addUserInDB(payload: { name: string; email: string; passwo
 	}
 }
 
+// Function to get a user by id from the database
 export async function getUserByIdFromDB(userId: string) {
 	try {
 		const user = await db
@@ -40,6 +42,7 @@ export async function getUserByIdFromDB(userId: string) {
 	}
 }
 
+// Function to get a user by email from the database
 export async function getUserByEmailFromDB(email: string) {
 	try {
 		const user = await db.select().from(users).where(eq(users.email, email));
@@ -49,6 +52,7 @@ export async function getUserByEmailFromDB(email: string) {
 	}
 }
 
+// Function to update a user in the database
 export async function updateUserInDB(payload: { userId: string; name?: string; organisationId?: string }) {
 	try {
 		const updatedPayload = {

@@ -2,6 +2,7 @@ import { AddMemberToConversationInDBError } from "../exceptions/conversationMemb
 import db from "./db";
 import { conversationMembers } from "./schema";
 
+// Function to add a member to a conversation in the database
 export async function addMemberToConversationInDB(payload: { conversationId: string; userId: string }) {
 	try {
 		const insertPayload = {

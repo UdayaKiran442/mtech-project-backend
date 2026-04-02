@@ -4,6 +4,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { organisation } from "./schema";
 
+// Function to create an organisation in the database
 export async function createOrganisationInDB(payload: ICreateOrganisationSchema) {
 	try {
 		const insertPayload = {

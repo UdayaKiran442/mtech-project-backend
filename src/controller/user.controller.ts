@@ -6,6 +6,14 @@ import type { ILoginUserSchema, IRegisterUserSchema } from "../routes/v1/user.ro
 import { comparePassword, hashPassword } from "../utils/bcrypt.utils";
 import { generateJwtToken } from "../utils/jwt.utils";
 
+/**
+ * 
+ * @param payload 
+ * @description Register new user
+ * - It first hashed the password and the calls the repository function to add user in the database
+ * - JWT Token is generated for the new user and returned along with new user details
+ * @returns new user and JWT token 
+ */
 export async function registerUser(payload: IRegisterUserSchema) {
 	try {
 		const passwordHash = await hashPassword(payload.password);
@@ -24,6 +32,14 @@ export async function registerUser(payload: IRegisterUserSchema) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description This function is used to login a user
+ * - Checks for user, then compares the password and if valid, generates a JWT token and returns it
+ * - If invalid credentials, it throws an error
+ * @returns JWT token
+ */
 export async function loginUser(payload: ILoginUserSchema) {
 	try {
 		const user = await getUserByEmailFromDB(payload.email);
@@ -46,6 +62,13 @@ export async function loginUser(payload: ILoginUserSchema) {
 	}
 }
 
+/**
+ * 
+ * @param userId 
+ * @description Get workspaces user is part of
+ * - It calls the repository function to get user workspaces from the database and returns it
+ * @returns Workspaces user is part of
+ */
 export async function getUserWorkspaces(userId: string){
 	try {
 		return await getUserWorkspacesFromDB(userId);

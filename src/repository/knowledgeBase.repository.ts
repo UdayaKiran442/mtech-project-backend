@@ -3,6 +3,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { knowledgeBase } from "./schema";
 
+// Function to add a knowledge file to the database
 export async function addKnowledgeBaseInDB(payload: { workspaceId: string; uploadedBy: string; fileUrl: string; key: string }) {
 	try {
 		const insertPayload = {

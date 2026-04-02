@@ -13,6 +13,15 @@ import { convertTextToChunkService, extractTextFromS3FileService } from "../serv
 import { upsertEmbeddingsService } from "../services/pinecone.service";
 import { convertTextToEmbeddingsService } from "../services/python.service";
 
+/**
+ * 
+ * @param payload 
+ * @description Function to create a new workspace
+ * - Creates a new workspace 
+ * - Updates user with organisation id
+ * - Adds user to workspace members table with admin role
+ * @returns Returns details of new workspace created
+ */
 export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 	try {
 		// create workspace
@@ -37,6 +46,13 @@ export async function createWorkspace(payload: ICreateWorkspaceSchema) {
 	}
 }
 
+/**
+ * 
+ * @param workspaceUrl 
+ * @description Function to check if workspace url is unique or not
+ * - Calls db function to check if workspace url is unique
+ * @returns Return boolean value
+ */
 export async function isWorkspaceUrlUnique(workspaceUrl: string) {
 	try {
 		// db call to check if workspace url is unique
@@ -47,6 +63,12 @@ export async function isWorkspaceUrlUnique(workspaceUrl: string) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description Function to fetch workspace members
+ * @returns 
+ */
 export async function fetchWorkspaceMembers(payload: IFetchWorkspaceMembersSchema) {
 	try {
 		return await getWorkspaceMembersFromDB(payload.workspaceId);
@@ -55,6 +77,16 @@ export async function fetchWorkspaceMembers(payload: IFetchWorkspaceMembersSchem
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description Function to add knowledge to workspace
+ * - First extract text from S3 file url 
+ * - Convert text into chunks
+ * - Convert text chunks into embeddings using python service
+ * - Store embeddings in vector db and file details in relational db
+ * @returns void
+ */
 export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 	try {
 		// extract text from file

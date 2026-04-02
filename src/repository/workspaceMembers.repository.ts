@@ -4,6 +4,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users, workspace, workspaceMembers } from "./schema";
 
+// Function to add a workspace member to the database
 export async function addWorkspaceMemberInDB(payload: {workspaceId: string; userId: string; role: string}){
     try {
         const insertPayload = {
@@ -21,6 +22,7 @@ export async function addWorkspaceMemberInDB(payload: {workspaceId: string; user
     }
 }
 
+// Function to get workspace members from the database
 export async function getWorkspaceMembersFromDB(workspaceId: string) {
     try {
         return await db.select(
@@ -38,6 +40,7 @@ export async function getWorkspaceMembersFromDB(workspaceId: string) {
     }
 }
 
+// Function to get user workspaces from the database
 export async function getUserWorkspacesFromDB(userId: string) {
     try {
         return await db.select({

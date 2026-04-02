@@ -5,6 +5,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { invitations } from "./schema";
 
+// Function to add an invitation to the database
 export async function addInvitationInDB(payload: IInviteUserSchema) {
 	try {
 		const insertPayload = {
@@ -23,6 +24,7 @@ export async function addInvitationInDB(payload: IInviteUserSchema) {
 	}
 }
 
+// Function to get an invitation by id from the database
 export async function getInvitationByIdFromDB(invitationId: string) {
 	try {
 		const invitation = await db.select().from(invitations).where(eq(invitations.invitationId, invitationId));
@@ -32,6 +34,7 @@ export async function getInvitationByIdFromDB(invitationId: string) {
 	}
 }
 
+// Function to accept an invitation in the database
 export async function acceptInvitationInDB(invitationId: string) {
 	try {
 		await db.update(invitations).set({ accepted: true }).where(eq(invitations.invitationId, invitationId));

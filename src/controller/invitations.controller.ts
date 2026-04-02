@@ -6,6 +6,14 @@ import { getUserByEmailFromDB } from "../repository/user.repository";
 import { addWorkspaceMemberInDB } from "../repository/workspaceMembers.repository";
 import type { IAcceptInvitationSchema, IInviteUserSchema } from "../routes/v1/invitations.route";
 
+/**
+ * 
+ * @param payload 
+ * @description 
+ * - First it checks if the user with the email already exists in the database. If user exists, it sets newUser to false else true
+ * - Then function to add an invitation to the database is called and the invitation details are returned
+ * @returns New Invitation details
+ */
 export async function inviteUserToWorkspace(payload: IInviteUserSchema) {
 	try {
 		const user = await getUserByEmailFromDB(payload.email);
@@ -21,7 +29,16 @@ export async function inviteUserToWorkspace(payload: IInviteUserSchema) {
 	}
 }
 
-// TODO: handle case when user is not registered and invited to workspace
+// TODO: handle case when user is not registered to workspace
+/**
+ * 
+ * @param payload 
+ * @description 
+ * - First it checks if the invitation exists in the database. If not, it throws an error
+ * - Then it checks if the invitation is already accepted. If accepted, it throws an error
+ * - If invitation exists and not accepted, then it updates the invitation as accepted and adds the user to workspace members with member role
+ * @returns void
+ */
 export async function acceptInvitation(payload: IAcceptInvitationSchema) {
 	try {
 		// get inviation from db

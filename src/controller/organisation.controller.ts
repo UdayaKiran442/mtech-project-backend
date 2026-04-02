@@ -2,6 +2,12 @@ import { CreateOrganisationError, CreateOrganisationInDBError } from "../excepti
 import { createOrganisationInDB } from "../repository/organisation.repository";
 import type { ICreateOrganisationSchema } from "../routes/v1/organisation.route";
 
+/**
+ * 
+ * @param payload 
+ * @description Function to create an organisation
+ * @returns New organisation details
+ */
 export async function createOrganisation(payload: ICreateOrganisationSchema) {
 	try {
 		// create organisation

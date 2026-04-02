@@ -7,6 +7,15 @@ import { createConversationInDB, fetchConversationIdFromDB } from "../repository
 import { fetchChatMessagesFromDB } from "../repository/messages.repository";
 import type { IFetchChatMessagesSchema } from "../routes/v1/chat.route";
 
+/**
+ * 
+ * @param payload 
+ * @description This function fetches chat messages
+ * - It first checks if a conversation exists between the user and the receiver based on the type of conversation (dm or group)
+ * - If a conversation exists, it fetches messages based on the conversation id
+ * - If a conversation does not exist, it creates a new conversation and adds members to the conversation and returns an empty array of messages
+ * @returns Array of messages
+ */
 export async function fetchChatMessages(payload: IFetchChatMessagesSchema) {
 	try {
 		// fetch conversation id of the user and the receiver based on type of conversation (dm or group)

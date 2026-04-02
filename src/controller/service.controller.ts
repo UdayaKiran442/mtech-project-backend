@@ -6,6 +6,15 @@ import { FetchDocumentsFromAWSError, FetchDocumentsFromS3ServiceError, UploadFil
 import { fetchDocumentsFromS3Service, uploadFileToS3Service } from "../services/aws.service";
 import type { IAWSFetchDocuments } from "../routes/v1/service.route";
 
+/**
+ * 
+ * @param payload 
+ * @description Service controller to upload file to GCP
+ * - It first converts the file to buffer and saves it temporarily in the server
+ * - Then it calls the service function to upload file to GCP and gets the file URL
+ * - Finally, it deletes the temporary file from the server and returns the file URL 
+ * @returns 
+ */
 export async function uploadFileToGCP(payload: { file: File }) {
 	let filePath = "";
 	try {
@@ -28,6 +37,15 @@ export async function uploadFileToGCP(payload: { file: File }) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description
+ * - It first converts the file to buffer and saves it temporarily in the file system
+ * - Then it calls the service function to upload file to AWS S3 and gets the file URL
+ * - Finally, it deletes the temporary file from the file system and returns the file URL
+ * @returns File URL from AWS S3
+ */
 export async function uploadFileToAWS(payload: { file: File; workspaceId: string }) {
 	let filePath = "";
 	try {
@@ -55,6 +73,7 @@ export async function uploadFileToAWS(payload: { file: File; workspaceId: string
 	}
 }
 
+// Function to fetch documents from AWS S3
 export async function fetchDocumentsFromAWS(payload: IAWSFetchDocuments) {
 	try {
 		return fetchDocumentsFromS3Service(payload.workspaceId);

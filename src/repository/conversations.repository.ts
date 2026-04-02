@@ -5,6 +5,7 @@ import { generateNanoId } from "../utils/nano.utils";
 import { conversations } from "./schema";
 import { CreateConversationInDBError, FetchConversationIdFromDBError } from "../exceptions/conversations.exceptions";
 
+// Function to fetch conversation ID from the database based on user id and receiver id
 export async function fetchConversationIdFromDB(payload: IFetchChatMessagesSchema) {
 	try {
 		const query = await db.execute(sql`SELECT c.conversation_id
@@ -21,6 +22,7 @@ export async function fetchConversationIdFromDB(payload: IFetchChatMessagesSchem
 	}
 }
 
+// Function to create a conversation in the database
 export async function createConversationInDB(conversationType: string) {
 	try {
 		const insertPayload = {
