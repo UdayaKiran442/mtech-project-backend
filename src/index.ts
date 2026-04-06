@@ -1,15 +1,26 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+
 import v1Router from "./routes";
 import { convertTextToChunkService, extractTextFromS3FileService } from "./services/langchain.service";
 import { convertTextToEmbeddingsService } from "./services/python.service";
 import { upsertEmbeddingsService } from "./services/pinecone.service";
 
+import { engine } from "./config/websockets.config"
+import { generateNanoId } from "./utils/nano.utils";
+
+
+
 const app = new Hono();
 
 app.get("/", (c) => {
 	return c.text("Hello Hono! From CI CD pipeline");
+});
+
+app.get("/test1", (c) => {
+	const nanoid = `msg_${generateNanoId()}`;
+	return c.text(`Hello World! ${nanoid}`);
 });
 
 app.get("/test", async (c) => {
@@ -32,10 +43,21 @@ app.use(
 
 app.route("/v1", v1Router);
 
+const { websocket } = engine.handler();
+
+
 Bun.serve({
 	port: 3000,
 	idleTimeout: 255,
-	fetch: app.fetch,
+	fetch(req, server) {
+		const url = new URL(req.url);
+		if (url.pathname === "/socket.io/") {
+			return engine.handleRequest(req, server);
+		} else {
+			return app.fetch(req, server);
+		}
+  	},
+	websocket,
 });
 
 export default app;

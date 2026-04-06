@@ -31,4 +31,31 @@ chatRoute.post("/fetch-messages", authMiddleware, async (c) => {
     }
 })
 
+const SendMessageSchema = z.object({
+    conversationId: z.string(),
+    message: z.string(),
+})
+
+export type ISendMessageSchema = z.infer<typeof SendMessageSchema> & { userId: string};
+
+chatRoute.post("/send-message", authMiddleware, async (c) => {
+    try {
+        const validation = SendMessageSchema.safeParse(await c.req.json());
+        if (!validation.success) {
+            throw validation.error;
+        }
+        const payload = {
+            ...validation.data,
+            userId: c.get("user").userId,
+        }
+        // Call the service to send the message
+        return c.json({ success: true });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            const errMessage = JSON.parse(error.message);
+            return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+        }
+    }
+})
+
 export default chatRoute;
