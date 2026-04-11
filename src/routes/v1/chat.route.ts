@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import z from "zod";
 import { authMiddleware } from "../../middleware/authentication.middleware";
-import { fetchChatMessages } from "../../controller/chat.controller";
+import { fetchChatMessages, sendMessage } from "../../controller/chat.controller";
 
 const chatRoute = new Hono();
 
@@ -49,7 +49,8 @@ chatRoute.post("/send-message", authMiddleware, async (c) => {
             userId: c.get("user").userId,
         }
         // Call the service to send the message
-        return c.json({ success: true });
+        const newMessage = await sendMessage(payload);
+        return c.json({ success: true, message: newMessage });
     } catch (error) {
         if (error instanceof z.ZodError) {
             const errMessage = JSON.parse(error.message);
