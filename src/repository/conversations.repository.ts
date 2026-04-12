@@ -12,7 +12,7 @@ export async function fetchConversationIdFromDB(payload: IGetConversationIdSchem
             FROM conversations c
             JOIN conversation_members m1 ON c.conversation_id = m1.conversation_id
             JOIN conversation_members m2 ON c.conversation_id = m2.conversation_id
-            WHERE c.type = 'dm'
+            WHERE c.type = ${payload.type}
             AND m1.user_id = ${payload.userId}
             AND m2.user_id = ${payload.receiverId}
         `);

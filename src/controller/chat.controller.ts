@@ -40,6 +40,14 @@ export async function sendMessage(payload: ISendMessageSchema) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description 
+ * - Fetch conversation id for userId and receiverId based on conversation type (dm or group)
+ * - If conversation id doesn't exist, create a new conversation and add members to the conversation and return the conversation id
+ * @returns conversation id 
+ */
 export async function getConversationId(payload: IGetConversationIdSchema) {
 	try {
 		// fetch conversation id of the user and the receiver based on type of conversation (dm or group)
