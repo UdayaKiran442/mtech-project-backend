@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
-import type { IFetchChatMessagesSchema } from "../routes/v1/chat.route";
+import type { IGetConversationIdSchema } from "../routes/v1/chat.route";
 import db from "./db";
 import { generateNanoId } from "../utils/nano.utils";
 import { conversations } from "./schema";
 import { CreateConversationInDBError, FetchConversationIdFromDBError } from "../exceptions/conversations.exceptions";
 
 // Function to fetch conversation ID from the database based on user id and receiver id
-export async function fetchConversationIdFromDB(payload: IFetchChatMessagesSchema) {
+export async function fetchConversationIdFromDB(payload: IGetConversationIdSchema) {
 	try {
 		const query = await db.execute(sql`SELECT c.conversation_id
             FROM conversations c

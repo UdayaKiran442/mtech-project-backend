@@ -17,3 +17,13 @@ export class SendMessageError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class GetConversationIdError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "GetConversationIdError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
