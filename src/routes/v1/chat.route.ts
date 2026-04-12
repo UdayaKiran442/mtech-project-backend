@@ -4,7 +4,8 @@ import { authMiddleware } from "../../middleware/authentication.middleware";
 import { fetchChatMessages, getConversationId, sendMessage } from "../../controller/chat.controller";
 import { CreateConversationInDBError, FetchConversationIdFromDBError } from "../../exceptions/conversations.exceptions";
 import { AddMemberToConversationInDBError } from "../../exceptions/conversationMembers.exceptions";
-import { GetConversationIdError } from "../../exceptions/chat.exceptions";
+import { FetchChatMessagesError, GetConversationIdError } from "../../exceptions/chat.exceptions";
+import { FetchMessagesFromDBError } from "../../exceptions/messages.exceptions";
 
 const chatRoute = new Hono();
 
@@ -30,6 +31,9 @@ chatRoute.post("/fetch-messages", authMiddleware, async (c) => {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (error instanceof FetchMessagesFromDBError || error instanceof FetchChatMessagesError) {
+			return c.json({ success: false, error: error.name, message: error.message }, 500);
 		}
 	}
 });
