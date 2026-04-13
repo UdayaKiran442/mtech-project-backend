@@ -7,7 +7,6 @@ import { convertTextToChunkService, extractTextFromS3FileService } from "./servi
 import { convertTextToEmbeddingsService } from "./services/python.service";
 import { upsertEmbeddingsService } from "./services/pinecone.service";
 
-import { engine } from "./config/websockets.config"
 import { generateNanoId } from "./utils/nano.utils";
 
 
@@ -43,21 +42,11 @@ app.use(
 
 app.route("/v1", v1Router);
 
-const { websocket } = engine.handler();
-
 
 Bun.serve({
 	port: 3000,
 	idleTimeout: 255,
-	fetch(req, server) {
-		const url = new URL(req.url);
-		if (url.pathname === "/socket.io/") {
-			return engine.handleRequest(req, server);
-		} else {
-			return app.fetch(req, server);
-		}
-  	},
-	websocket,
+	fetch: app.fetch,
 });
 
 export default app;

@@ -1,12 +1,11 @@
-import { io } from "../config/websockets.config";
-import { FetchChatMessagesError, GetConversationIdError, SendMessageError } from "../exceptions/chat.exceptions";
+import { FetchChatMessagesError, GetConversationIdError } from "../exceptions/chat.exceptions";
 import { AddMemberToConversationInDBError } from "../exceptions/conversationMembers.exceptions";
 import { CreateConversationInDBError, FetchConversationIdFromDBError } from "../exceptions/conversations.exceptions";
-import { AddMessageToDBError, FetchMessagesFromDBError } from "../exceptions/messages.exceptions";
+import { FetchMessagesFromDBError } from "../exceptions/messages.exceptions";
 import { addMemberToConversationInDB } from "../repository/conversationMembers.repository";
 import { createConversationInDB, fetchConversationIdFromDB } from "../repository/conversations.repository";
-import { addMessageToDB, fetchChatMessagesFromDB } from "../repository/messages.repository";
-import type { IFetchChatMessagesSchema, IGetConversationIdSchema, ISendMessageSchema } from "../routes/v1/chat.route";
+import { fetchChatMessagesFromDB } from "../repository/messages.repository";
+import type { IFetchChatMessagesSchema, IGetConversationIdSchema } from "../routes/v1/chat.route";
 
 /**
  *
@@ -22,21 +21,6 @@ export async function fetchChatMessages(payload: IFetchChatMessagesSchema) {
 			throw error;
 		}
 		throw new FetchChatMessagesError("Error fetching chat messages", { cause: (error as Error).message });
-	}
-}
-
-export async function sendMessage(payload: ISendMessageSchema) {
-	try {
-		io.on(`conversation_${payload.conversationId}`, (socket) => {
-			socket.emit("message", message.text);
-		});
-		const message = await addMessageToDB(payload);
-		return message;
-	} catch (error) {
-		if (error instanceof AddMessageToDBError) {
-			throw error;
-		}
-		throw new SendMessageError("Error sending message", { cause: (error as Error).message });
 	}
 }
 
