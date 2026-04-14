@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import db from "./db";
 import { messages } from "./schema";
 import { AddMessageToDBError, FetchMessagesFromDBError } from "../exceptions/messages.exceptions";
-import type { ISendMessageSchema } from "../routes/v1/chat.route";
 import { generateNanoId } from "../utils/nano.utils";
 
 // Function to fetch chat messages from the database based on conversation id
@@ -14,13 +13,13 @@ export async function fetchChatMessagesFromDB(conversationId: string) {
 	}
 }
 
-export async function addMessageToDB(payload: ISendMessageSchema) {
+export async function addMessageToDB(payload: { conversationId: string; text: string; senderId: string }) {
 	try {
 		const insertPayload = {
 			messageId: `msg_${generateNanoId()}`,
 			conversationId: payload.conversationId,
-			senderId: payload.userId,
-			text: payload.message,
+			senderId: payload.senderId,
+			text: payload.text,
 			createdAt: new Date(),
 		};
 		await db.insert(messages).values(insertPayload);
