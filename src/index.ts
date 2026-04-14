@@ -1,8 +1,5 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { Server as BunEngine } from "@socket.io/bun-engine";
-import type { WebSocketData } from "@socket.io/bun-engine";
-import { Server } from "socket.io";
 
 import v1Router from "./routes";
 import { convertTextToChunkService, extractTextFromS3FileService } from "./services/langchain.service";
@@ -10,27 +7,10 @@ import { convertTextToEmbeddingsService } from "./services/python.service";
 import { upsertEmbeddingsService } from "./services/pinecone.service";
 
 import { generateNanoId } from "./utils/nano.utils";
+import engine from "./config/websocket.config";
+import type { WebSocketData } from "@socket.io/bun-engine";
 
 const app = new Hono();
-
-const io = new Server({
-	path: "/socket.io/",
-	cors: {
-		origin: "http://localhost:3001",
-		credentials: true,
-		methods: ["GET", "POST"],
-	},
-});
-
-const engine = new BunEngine({
-	path: "/socket.io/",
-});
-
-io.bind(engine);
-
-io.on("connection", (socket) => {
-	console.log("a user connected", socket.id);
-});
 
 app.get("/", (c) => {
 	return c.text("Hello Hono! From CI CD pipeline");
