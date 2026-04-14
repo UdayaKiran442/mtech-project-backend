@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-
+import { Server as BunEngine } from "@socket.io/bun-engine";
+import { Server } from "socket.io";
 
 import v1Router from "./routes";
 import { convertTextToChunkService, extractTextFromS3FileService } from "./services/langchain.service";
@@ -9,9 +10,26 @@ import { upsertEmbeddingsService } from "./services/pinecone.service";
 
 import { generateNanoId } from "./utils/nano.utils";
 
-
-
 const app = new Hono();
+
+const io = new Server({
+	path: "/socket.io/",
+	cors: {
+		origin: "http://localhost:3001",
+		credentials: true,
+		methods: ["GET", "POST"],
+	},
+});
+
+const engine = new BunEngine({
+	path: "/socket.io/",
+});
+
+io.bind(engine);
+
+io.on("connection", (socket) => {
+	console.log("a user connected", socket.id);
+});
 
 app.get("/", (c) => {
 	return c.text("Hello Hono! From CI CD pipeline");
@@ -42,11 +60,21 @@ app.use(
 
 app.route("/v1", v1Router);
 
+const { websocket } = engine.handler();
 
-Bun.serve({
+export default {
 	port: 3000,
-	idleTimeout: 255,
-	fetch: app.fetch,
-});
+	idleTimeout: 30, // must be greater than the "pingInterval" option of the engine, which defaults to 25 seconds
 
-export default app;
+	fetch(req: Request, server: any) {
+		const url = new URL(req.url);
+
+		if (url.pathname === "/socket.io/") {
+			return engine.handleRequest(req, server);
+		} else {
+			return app.fetch(req, server);
+		}
+	},
+
+	websocket,
+};
