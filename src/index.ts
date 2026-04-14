@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { Server as BunEngine } from "@socket.io/bun-engine";
+import type { WebSocketData } from "@socket.io/bun-engine";
 import { Server } from "socket.io";
 
 import v1Router from "./routes";
@@ -66,7 +67,7 @@ export default {
 	port: 3000,
 	idleTimeout: 30, // must be greater than the "pingInterval" option of the engine, which defaults to 25 seconds
 
-	fetch(req: Request, server: any) {
+	fetch(req: Request, server: Bun.Server<WebSocketData>) {
 		const url = new URL(req.url);
 
 		if (url.pathname === "/socket.io/") {
