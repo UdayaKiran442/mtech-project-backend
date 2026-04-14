@@ -6,10 +6,19 @@ import { convertTextToChunkService, extractTextFromS3FileService } from "./servi
 import { convertTextToEmbeddingsService } from "./services/python.service";
 import { upsertEmbeddingsService } from "./services/pinecone.service";
 
+import { generateNanoId } from "./utils/nano.utils";
+import engine from "./config/websocket.config";
+import type { WebSocketData } from "@socket.io/bun-engine";
+
 const app = new Hono();
 
 app.get("/", (c) => {
 	return c.text("Hello Hono! From CI CD pipeline");
+});
+
+app.get("/test1", (c) => {
+	const nanoid = `msg_${generateNanoId()}`;
+	return c.text(`Hello World! ${nanoid}`);
 });
 
 app.get("/test", async (c) => {
@@ -32,10 +41,21 @@ app.use(
 
 app.route("/v1", v1Router);
 
-Bun.serve({
-	port: 3000,
-	idleTimeout: 255,
-	fetch: app.fetch,
-});
+const { websocket } = engine.handler();
 
-export default app;
+export default {
+	port: 3000,
+	idleTimeout: 30, // must be greater than the "pingInterval" option of the engine, which defaults to 25 seconds
+
+	fetch(req: Request, server: Bun.Server<WebSocketData>) {
+		const url = new URL(req.url);
+
+		if (url.pathname === "/socket.io/") {
+			return engine.handleRequest(req, server);
+		} else {
+			return app.fetch(req, server);
+		}
+	},
+
+	websocket,
+};
