@@ -17,12 +17,14 @@ const engine = new BunEngine({
 
 io.bind(engine);
 
+// start listening for socket connections
 io.on("connection", (socket) => {
-
+    // join the user to a room based on conversation id
     socket.on("joinRoom", (roomId: string) => {
         socket.join(roomId);
     })
 
+    // listen for new events in the room 
     socket.on("newMessage", async (messageData: { conversationId: string; text: string; senderId: string }) => {
         const newMessage = await addMessageToDB({
             conversationId: messageData.conversationId,
