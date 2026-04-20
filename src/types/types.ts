@@ -5,3 +5,11 @@ export type AuthContext = {
 		};
 	};
 };
+
+export type GitContext = {
+	Variables: {
+		token: {
+			accessToken: string;
+		};
+	};
+};
