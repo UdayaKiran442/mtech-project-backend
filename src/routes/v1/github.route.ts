@@ -32,7 +32,7 @@ githubRoute.get("/callback", async (c: Context<GitContext>) => {
 	});
     const data = await githubUserResponse.json();
 	console.log("GitHub User Response Status:", data);
-	return c.redirect("http://localhost:3001/github-success");
+	return c.redirect(`http://localhost:3001/github-success/?${new URLSearchParams({ username: data.login })}`);
 });
 
 export default githubRoute;

@@ -9,6 +9,7 @@ export const users = pgTable(
 		passwordHash: varchar("password_hash").notNull(),
 		organisationId: varchar("organisation_id"),
 		isGitHubConnected: boolean("is_github_connected").default(false).notNull(),
+		githubUsername: varchar("github_username"),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at").defaultNow().notNull(),
 	},
@@ -117,21 +118,5 @@ export const messages = pgTable(
 	(messages) => ({
 		conversationIdIdx: index("conversation_id_idx_messages").on(messages.conversationId),
 		senderIdIdx: index("sender_id_idx_messages").on(messages.senderId),
-	}),
-);
-
-export const githubDetails = pgTable(
-	"github_details",
-	{
-		id: varchar("id").primaryKey(),
-		userId: varchar("user_id").notNull(),
-		avatarUrl: varchar("avatar_url").notNull(),
-		username: varchar("username").notNull(),
-		url: varchar("url").notNull(),
-		htmlUrl: varchar("html_url").notNull(),
-		connectedAt: timestamp("connected_at").defaultNow().notNull(),
-	},
-	(githubDetails) => ({
-		userIdIdx: index("user_id_idx_github_details").on(githubDetails.userId),
 	}),
 );

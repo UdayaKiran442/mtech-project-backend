@@ -34,6 +34,8 @@ export async function getUserByIdFromDB(userId: string) {
 				name: users.name,
 				email: users.email,
 				organisationId: users.organisationId,
+				isGithubConnected: users.isGitHubConnected,
+				githubUsername: users.githubUsername,
 			})
 			.from(users)
 			.where(eq(users.userId, userId));

@@ -19,4 +19,5 @@ export type IUpdateUserPayload = {
 	name?: string;
 	organisationId?: string;
 	isGitHubConnected?: boolean;
+	githubUsername?: string;
 };
