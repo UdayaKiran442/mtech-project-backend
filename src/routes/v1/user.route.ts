@@ -106,12 +106,12 @@ userRoute.get("/workspaces", authMiddleware, async (c) => {
 	}
 });
 
-userRoute.post("/update-user", authMiddleware, async (c) => {
+userRoute.post("/update", authMiddleware, async (c) => {
 	try {
 		const { userId } = c.get("user");
 		const payload = await c.req.json();
-		const response = await updateUser({ ...payload, userId });
-		return c.json({ success: true, message: "User updated successfully", response });
+		await updateUser({ ...payload, userId });
+		return c.json({ success: true, message: "User updated successfully" });
 	} catch (error) {
 		if (error instanceof UpdateUserError || error instanceof UpdateUserInDBError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);

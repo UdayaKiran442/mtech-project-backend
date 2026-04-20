@@ -6,13 +6,6 @@ export type AuthContext = {
 	};
 };
 
-export type GitContext = {
-	Variables: {
-		token: {
-			accessToken: string;
-		};
-	};
-};
 
 export type IUpdateUserPayload = {
 	userId: string;
