@@ -4,6 +4,7 @@ import { AddUserInDBError, GetUserByEmailFromDBError, GetUserByIdFromDBError, Up
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { users } from "./schema";
+import type { IUpdateUserPayload } from "../types/types";
 
 // Function to add a user to the database
 export async function addUserInDB(payload: { name: string; email: string; passwordHash: string; organisationId?: string }) {
@@ -53,7 +54,7 @@ export async function getUserByEmailFromDB(email: string) {
 }
 
 // Function to update a user in the database
-export async function updateUserInDB(payload: { userId: string; name?: string; organisationId?: string }) {
+export async function updateUserInDB(payload: IUpdateUserPayload) {
 	try {
 		const updatedPayload = {
 			...payload,

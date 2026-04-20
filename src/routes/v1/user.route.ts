@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import z from "zod";
 
-import { getUserWorkspaces, loginUser, registerUser } from "../../controller/user.controller";
+import { getUserWorkspaces, loginUser, registerUser, updateUser } from "../../controller/user.controller";
 import {
 	AddUserInDBError,
 	GetUserByEmailFromDBError,
@@ -10,6 +10,8 @@ import {
 	InvalidCredentialsError,
 	LoginUserError,
 	RegisterUserError,
+	UpdateUserError,
+	UpdateUserInDBError,
 } from "../../exceptions/user.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { getUserByIdFromDB } from "../../repository/user.repository";
@@ -101,6 +103,20 @@ userRoute.get("/workspaces", authMiddleware, async (c) => {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to get user workspaces", error: (error as Error).message }, 500);
+	}
+});
+
+userRoute.post("/update-user", authMiddleware, async (c) => {
+	try {
+		const { userId } = c.get("user");
+		const payload = await c.req.json();
+		const response = await updateUser({ ...payload, userId });
+		return c.json({ success: true, message: "User updated successfully", response });
+	} catch (error) {
+		if (error instanceof UpdateUserError || error instanceof UpdateUserInDBError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 500);
+		}
+		return c.json({ success: false, message: "Failed to update user", error: (error as Error).message }, 500);
 	}
 });
 

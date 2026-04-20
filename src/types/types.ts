@@ -13,3 +13,10 @@ export type GitContext = {
 		};
 	};
 };
+
+export type IUpdateUserPayload = {
+	userId: string;
+	name?: string;
+	organisationId?: string;
+	isGitHubConnected?: boolean;
+};

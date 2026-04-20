@@ -77,3 +77,13 @@ export class GetUserWorkspacesError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class UpdateUserError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "UpdateUserError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
