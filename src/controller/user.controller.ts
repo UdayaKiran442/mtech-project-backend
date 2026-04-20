@@ -81,6 +81,12 @@ export async function getUserWorkspaces(userId: string){
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description Update existing user with details provided in the payload
+ * - It calls the repository function to update user in the database
+ */
 export async function updateUser(payload: IUpdateUserPayload) {
 	try {
 		await updateUserInDB(payload);
