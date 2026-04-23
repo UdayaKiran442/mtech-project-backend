@@ -3,8 +3,17 @@ import z from "zod";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import { addKnowledgeToWorkspace, createWorkspace, fetchWorkspaceMembers, isWorkspaceUrlUnique } from "../../controller/workspace.controller";
 import { UpdateUserInDBError } from "../../exceptions/user.exceptions";
-import { CheckIfWorkspaceUrlIsUniqueInDBError, CreateWorkspaceError, CreateWorkspaceInDBError, FetchWorkspaceMembersError, IsWorkspaceUrlUniqueError } from "../../exceptions/workspace.exceptions";
+import {
+	AddKnowledgeToWorkspaceError,
+	CheckIfWorkspaceUrlIsUniqueInDBError,
+	CreateWorkspaceError,
+	CreateWorkspaceInDBError,
+	FetchWorkspaceMembersError,
+	IsWorkspaceUrlUniqueError,
+} from "../../exceptions/workspace.exceptions";
 import { AddWorkspaceMemberInDBError, FetchWorkspaceMembersInDBError } from "../../exceptions/workspaceMember.exceptions";
+import { AddKnowledgeBaseInDBError } from "../../exceptions/knowledgeBase.exceptions";
+import { ConvertTextToChunkServiceError, ConvertTextToEmbeddingsServiceError, ExtractTextFromS3FileServiceError, UpsertEmbeddingsServiceError } from "../../exceptions/service.exceptions";
 
 const workspaceRoute = new Hono();
 
@@ -122,6 +131,16 @@ workspaceRoute.post("/add-knowledge", authMiddleware, async (c) => {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (
+			error instanceof ExtractTextFromS3FileServiceError ||
+			error instanceof ConvertTextToChunkServiceError ||
+			error instanceof ConvertTextToEmbeddingsServiceError ||
+			error instanceof UpsertEmbeddingsServiceError ||
+			error instanceof AddKnowledgeBaseInDBError ||
+			error instanceof AddKnowledgeToWorkspaceError
+		) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to add knowledge to workspace", error: (error as Error).message }, 500);
 	}
