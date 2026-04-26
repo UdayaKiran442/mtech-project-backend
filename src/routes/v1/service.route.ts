@@ -9,6 +9,7 @@ import {
 	UploadFileToGCPServiceError,
 	UploadFileToS3ServiceError,
 } from "../../exceptions/service.exceptions";
+import { authMiddleware } from "../../middleware/authentication.middleware";
 
 const serviceRoute = new Hono();
 
@@ -51,7 +52,7 @@ export type IAWSFetchDocuments = z.infer<typeof AWSFetchDocumentsSchema>;
  * @description Fetches all documents uploaded to AWS S3 for a given workspace.
  * @returns Array of documents with their metadata (key, url, size, lastModified, type).
  */
-serviceRoute.post("/aws/fetch-documents", async (c) => {
+serviceRoute.post("/aws/fetch-documents", authMiddleware, async (c) => {
 	try {
 		const validation = AWSFetchDocumentsSchema.safeParse(await c.req.json());
 		if (!validation.success) {
