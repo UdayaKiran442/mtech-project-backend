@@ -72,7 +72,7 @@ export const invitations = pgTable("invitations", {
 });
 
 export const knowledgeBase = pgTable(
-	"konwledge_base",
+	"knowledge_base",
 	{
 		fileId: varchar("file_id").primaryKey(),
 		workspaceId: varchar("workspace_id").notNull(),
