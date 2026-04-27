@@ -18,7 +18,7 @@ export async function addWorkspaceMemberInDB(payload: {workspaceId: string; user
         await db.insert(workspaceMembers).values(insertPayload);
         return insertPayload;
     } catch (error) {
-        throw new AddWorkspaceMemberInDBError("Failed to add workspace member in DB", { cause: (error as Error).cause });
+        throw new AddWorkspaceMemberInDBError("Failed to add workspace member in DB", { cause: (error as Error).message });
     }
 }
 
@@ -36,7 +36,7 @@ export async function getWorkspaceMembersFromDB(workspaceId: string) {
             }
         ).from(workspaceMembers).where(eq(workspaceMembers.workspaceId, workspaceId)).leftJoin(users, eq(workspaceMembers.userId, users.userId));
     } catch (error) {
-        throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).cause });
+        throw new FetchWorkspaceMembersInDBError("Failed to fetch workspace members from DB", { cause: (error as Error).message });
     }
 }
 
@@ -51,6 +51,6 @@ export async function getUserWorkspacesFromDB(userId: string) {
             role: workspaceMembers.role,
         }).from(workspaceMembers).innerJoin(workspace, eq(workspaceMembers.workspaceId, workspace.workspaceId)).where(eq(workspaceMembers.userId, userId));
     } catch (error) {
-        throw new GetUserWorkspacesFromDBError("Failed to fetch user workspaces from DB", { cause: (error as Error).cause });
+        throw new GetUserWorkspacesFromDBError("Failed to fetch user workspaces from DB", { cause: (error as Error).message });
     }
 }
