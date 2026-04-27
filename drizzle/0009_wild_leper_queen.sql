@@ -1,0 +1,1 @@
+ALTER TABLE "konwledge_base" RENAME TO "knowledge_base";

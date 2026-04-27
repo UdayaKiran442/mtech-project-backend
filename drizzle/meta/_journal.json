@@ -64,6 +64,13 @@
       "when": 1776670919662,
       "tag": "0008_nappy_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777297705181,
+      "tag": "0009_wild_leper_queen",
+      "breakpoints": true
     }
   ]
 }
