@@ -24,8 +24,9 @@ githubRoute.get("/callback", async (c) => {
 	// extract access token using the authorization code and fetch user details from Github API
 	const tokens = await github.validateAuthorizationCode(code);
 	const accessToken = tokens.accessToken();
+	// Cookie is set in browser
 	setCookie(c, "github_access_token", accessToken, {
-		secure: true,
+		secure: false, // Set to true in production when using HTTPS
 		httpOnly: true,
 	});
 	const githubUserResponse = await fetch("https://api.github.com/user", {
