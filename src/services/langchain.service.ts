@@ -33,7 +33,7 @@ export async function extractTextFromS3FileService(key: string) {
 export async function convertTextToChunkService(text: string){
 	try {
 		const splitter = new RecursiveCharacterTextSplitter({
-			chunkSize: 200,
+			chunkSize: 300,
 			chunkOverlap: 30,
 		})
 		return splitter.splitText(text);

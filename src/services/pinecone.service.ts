@@ -6,10 +6,10 @@ import type { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone
 const pc = new Pinecone({
 	apiKey: process.env.PINECONE_API_KEY || "",
 });
-const index = pc.index({ name: "mtech-project" });
 
-export async function upsertEmbeddingsService(payload: { vectors: number[][]; metadata: unknown }) {
+export async function upsertEmbeddingsService(payload: { vectors: number[][]; metadata: unknown, index: string }) {
 	try {
+		const index = pc.index({name: payload.index})
 		const data_to_upsert: PineconeRecord<RecordMetadata>[] = payload.vectors.map((vector) => ({
 			id: generateNanoId(),
 			values: vector,
