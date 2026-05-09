@@ -111,6 +111,7 @@ const AddKnowledgeSchema = z.object({
 	workspaceId: z.string(),
 	fileUrl: z.string(),
 	key: z.string(),
+	index: z.string(),
 });
 
 export type IAddKnowledgeSchema = z.infer<typeof AddKnowledgeSchema> & { uploadedBy: string };

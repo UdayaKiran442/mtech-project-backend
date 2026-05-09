@@ -101,7 +101,7 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 			await upsertEmbeddingsService({
 				metadata: { workspaceId: payload.workspaceId, uploadedBy: payload.uploadedBy, fileUrl: payload.fileUrl, textChunk: chunk },
 				vectors: embeddings.embeddings,
-				index: "knowledge-base",
+				index: payload.index,
 			});
 		}
 		// store file details in relational db
