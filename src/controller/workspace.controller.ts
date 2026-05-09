@@ -12,6 +12,7 @@ import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IFetchWorkspaceMember
 import { convertTextToChunkService, extractTextFromS3FileService } from "../services/langchain.service";
 import { upsertEmbeddingsService } from "../services/pinecone.service";
 import { convertTextToEmbeddingsService } from "../services/python.service";
+import { processChunksInParallel } from "../utils/workspace.utils";
 
 /**
  *
@@ -94,16 +95,8 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 		// split text into chunks
 		const textChunks = await convertTextToChunkService(text);
 
-		// convert into embeddings
-		for (const chunk of textChunks) {
-			const embeddings = await convertTextToEmbeddingsService(chunk);
-			// store in vector db and relational db
-			await upsertEmbeddingsService({
-				metadata: { workspaceId: payload.workspaceId, uploadedBy: payload.uploadedBy, fileUrl: payload.fileUrl, textChunk: chunk },
-				vectors: embeddings.embeddings,
-				index: payload.index,
-			});
-		}
+		// process chunks in parallel with controlled concurrency to avoid overwhelming services
+		await processChunksInParallel(textChunks, payload);
 		// store file details in relational db
 		await addKnowledgeBaseInDB({
 			workspaceId: payload.workspaceId,
