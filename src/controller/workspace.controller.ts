@@ -10,8 +10,6 @@ import { checkIfWorkspaceUrlIsUniqueInDB, createWorkspaceInDB } from "../reposit
 import { addWorkspaceMemberInDB, getWorkspaceMembersFromDB } from "../repository/workspaceMembers.repository";
 import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IFetchWorkspaceMembersSchema } from "../routes/v1/workspace.route";
 import { convertTextToChunkService, extractTextFromS3FileService } from "../services/langchain.service";
-import { upsertEmbeddingsService } from "../services/pinecone.service";
-import { convertTextToEmbeddingsService } from "../services/python.service";
 import { processChunksInParallel } from "../utils/workspace.utils";
 
 /**

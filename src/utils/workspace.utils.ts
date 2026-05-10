@@ -1,9 +1,10 @@
-import pLimit from "p-limit"; // ← Best option
+import pLimit from "p-limit"; 
 import { convertTextToEmbeddingsService } from "../services/python.service";
 import { upsertEmbeddingsService } from "../services/pinecone.service";
 import { ConvertTextToChunkServiceError, ConvertTextToEmbeddingsServiceError, UpsertEmbeddingsServiceError } from "../exceptions/service.exceptions";
+import type { IAddKnowledgeSchema } from "../routes/v1/workspace.route";
 
-export async function processChunksInParallel(textChunks: string[], payload: any) {
+export async function processChunksInParallel(textChunks: string[], payload: IAddKnowledgeSchema) {
 	try {
 		const limit = pLimit(10);
 
@@ -24,7 +25,7 @@ export async function processChunksInParallel(textChunks: string[], payload: any
 					index: payload.index,
 				});
 
-				return chunk; // optional
+				return chunk; 
 			}),
 		);
 
