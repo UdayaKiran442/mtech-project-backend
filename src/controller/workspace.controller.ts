@@ -1,16 +1,34 @@
 import { WORKSPACE_MEMBER_ROLES } from "../constants/workspaceMember.constants";
-import { AddKnowledgeBaseInDBError } from "../exceptions/knowledgeBase.exceptions";
-import { ConvertTextToChunkServiceError, ConvertTextToEmbeddingsServiceError, ExtractTextFromS3FileServiceError, UpsertEmbeddingsServiceError } from "../exceptions/service.exceptions";
+import { NotFoundError } from "../exceptions/common.exceptions";
+import { AddKnowledgeBaseInDBError, DeleteKnowledgeBaseFileFromDBError, GetFileDetailsFromDBError } from "../exceptions/knowledgeBase.exceptions";
+import {
+	ConvertTextToChunkServiceError,
+	ConvertTextToEmbeddingsServiceError,
+	DeleteFileFromPineconeServiceError,
+	DeleteFileFromS3,
+	DeleteFileFromS3ServiceError,
+	ExtractTextFromS3FileServiceError,
+	UpsertEmbeddingsServiceError,
+} from "../exceptions/service.exceptions";
 import { UpdateUserInDBError } from "../exceptions/user.exceptions";
-import { AddKnowledgeToWorkspaceError, CreateWorkspaceError, CreateWorkspaceInDBError, FetchWorkspaceMembersError, IsWorkspaceUrlUniqueError } from "../exceptions/workspace.exceptions";
+import {
+	AddKnowledgeToWorkspaceError,
+	CreateWorkspaceError,
+	CreateWorkspaceInDBError,
+	DeleteKnowledgeFromWorkspaceError,
+	FetchWorkspaceMembersError,
+	IsWorkspaceUrlUniqueError,
+} from "../exceptions/workspace.exceptions";
 import { AddWorkspaceMemberInDBError } from "../exceptions/workspaceMember.exceptions";
 import { addKnowledgeBaseInDB } from "../repository/knowledgeBase.repository";
 import { updateUserInDB } from "../repository/user.repository";
 import { checkIfWorkspaceUrlIsUniqueInDB, createWorkspaceInDB } from "../repository/workspace.repository";
 import { addWorkspaceMemberInDB, getWorkspaceMembersFromDB } from "../repository/workspaceMembers.repository";
-import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IFetchWorkspaceMembersSchema } from "../routes/v1/workspace.route";
+import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IDeleteKnowledgeSchema, IFetchWorkspaceMembersSchema } from "../routes/v1/workspace.route";
 import { convertTextToChunkService, extractTextFromS3FileService } from "../services/langchain.service";
+import { deleteFileFromPineconeService } from "../services/pinecone.service";
 import { processChunksInParallel } from "../utils/workspace.utils";
+import { deleteFileFromS3 } from "./service.controller";
 
 /**
  *
@@ -113,5 +131,23 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 			throw error;
 		}
 		throw new AddKnowledgeToWorkspaceError("Failed to add knowledge to workspace", { cause: (error as Error).message });
+	}
+}
+
+export async function deleteKnowledgeFromWorkspace(payload: IDeleteKnowledgeSchema) {
+	try {
+		await Promise.all([deleteFileFromPineconeService({ index: payload.index, fileUrl: payload.fileUrl }), deleteFileFromS3({ key: payload.key, fileId: payload.fileId, userId: payload.userId })]);
+	} catch (error) {
+		if (
+			error instanceof DeleteFileFromPineconeServiceError ||
+			error instanceof NotFoundError ||
+			error instanceof GetFileDetailsFromDBError ||
+			error instanceof DeleteKnowledgeBaseFileFromDBError ||
+			error instanceof DeleteFileFromS3ServiceError ||
+			error instanceof DeleteFileFromS3
+		) {
+			throw error;
+		}
+		throw new DeleteKnowledgeFromWorkspaceError("Failed to delete knowledge from workspace", { cause: (error as Error).message });
 	}
 }

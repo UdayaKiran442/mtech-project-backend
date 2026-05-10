@@ -97,3 +97,33 @@ export class FetchDocumentsFromAWSError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class DeleteFileFromS3ServiceError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "DeleteFileFromS3ServiceError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+export class DeleteFileFromS3 extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "DeleteFileFromS3";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+export class DeleteFileFromPineconeServiceError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "DeleteFileFromPineconeServiceError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
