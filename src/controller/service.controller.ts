@@ -3,7 +3,7 @@ import * as path from "path";
 import { generateNanoId } from "../utils/nano.utils";
 import { uploadFileToGCPService } from "../services/gcp.service";
 import {
-	DeleteFileFromS3,
+	DeleteKnowledgeBaseFileFromS3,
 	DeleteFileFromS3ServiceError,
 	FetchDocumentsFromAWSError,
 	FetchDocumentsFromS3ServiceError,
@@ -102,7 +102,7 @@ export async function fetchDocumentsFromAWS(payload: IAWSFetchDocuments) {
 }
 
 // Function to delete file from AWS S3
-export async function deleteFileFromS3(payload: IDeleteFileFromS3) {
+export async function deleteKnowledgeBaseFileFromS3(payload: IDeleteFileFromS3) {
 	try {
 		const bucketName = process.env.AWS_S3_BUCKET_NAME;
 		if (!bucketName) {
@@ -119,6 +119,6 @@ export async function deleteFileFromS3(payload: IDeleteFileFromS3) {
 		if (error instanceof NotFoundError || error instanceof GetFileDetailsFromDBError || error instanceof DeleteKnowledgeBaseFileFromDBError || error instanceof DeleteFileFromS3ServiceError) {
 			throw error;
 		}
-		throw new DeleteFileFromS3("Failed to delete file from AWS S3", { cause: (error as Error).message });
+		throw new DeleteKnowledgeBaseFileFromS3("Failed to delete file from AWS S3", { cause: (error as Error).message });
 	}
 }

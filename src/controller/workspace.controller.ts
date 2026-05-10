@@ -5,7 +5,7 @@ import {
 	ConvertTextToChunkServiceError,
 	ConvertTextToEmbeddingsServiceError,
 	DeleteFileFromPineconeServiceError,
-	DeleteFileFromS3,
+	DeleteKnowledgeBaseFileFromS3,
 	DeleteFileFromS3ServiceError,
 	ExtractTextFromS3FileServiceError,
 	UpsertEmbeddingsServiceError,
@@ -28,7 +28,7 @@ import type { IAddKnowledgeSchema, ICreateWorkspaceSchema, IDeleteKnowledgeSchem
 import { convertTextToChunkService, extractTextFromS3FileService } from "../services/langchain.service";
 import { deleteFileFromPineconeService } from "../services/pinecone.service";
 import { processChunksInParallel } from "../utils/workspace.utils";
-import { deleteFileFromS3 } from "./service.controller";
+import { deleteKnowledgeBaseFileFromS3 } from "./service.controller";
 
 /**
  *
@@ -145,7 +145,7 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
  */
 export async function deleteKnowledgeFromWorkspace(payload: IDeleteKnowledgeSchema) {
 	try {
-		await Promise.all([deleteFileFromPineconeService({ index: payload.index, fileUrl: payload.fileUrl }), deleteFileFromS3({ key: payload.key, fileId: payload.fileId, userId: payload.userId })]);
+		await Promise.all([deleteFileFromPineconeService({ index: payload.index, fileUrl: payload.fileUrl }), deleteKnowledgeBaseFileFromS3({ key: payload.key, fileId: payload.fileId, userId: payload.userId })]);
 	} catch (error) {
 		if (
 			error instanceof DeleteFileFromPineconeServiceError ||
@@ -153,7 +153,7 @@ export async function deleteKnowledgeFromWorkspace(payload: IDeleteKnowledgeSche
 			error instanceof GetFileDetailsFromDBError ||
 			error instanceof DeleteKnowledgeBaseFileFromDBError ||
 			error instanceof DeleteFileFromS3ServiceError ||
-			error instanceof DeleteFileFromS3
+			error instanceof DeleteKnowledgeBaseFileFromS3
 		) {
 			throw error;
 		}

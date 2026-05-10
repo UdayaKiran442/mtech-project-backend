@@ -18,7 +18,7 @@ import {
 	ConvertTextToChunkServiceError,
 	ConvertTextToEmbeddingsServiceError,
 	DeleteFileFromPineconeServiceError,
-	DeleteFileFromS3,
+	DeleteKnowledgeBaseFileFromS3,
 	DeleteFileFromS3ServiceError,
 	ExtractTextFromS3FileServiceError,
 	UpsertEmbeddingsServiceError,
@@ -188,7 +188,7 @@ workspaceRoute.post("/delete-knowledge", authMiddleware, async (c) => {
 			error instanceof GetFileDetailsFromDBError ||
 			error instanceof DeleteKnowledgeBaseFileFromDBError ||
 			error instanceof DeleteFileFromS3ServiceError ||
-			error instanceof DeleteFileFromS3 ||
+			error instanceof DeleteKnowledgeBaseFileFromS3 ||
 			error instanceof DeleteKnowledgeFromWorkspaceError
 		) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);

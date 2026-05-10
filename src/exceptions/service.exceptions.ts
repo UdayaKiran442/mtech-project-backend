@@ -108,11 +108,11 @@ export class DeleteFileFromS3ServiceError extends Error {
 	}
 }
 
-export class DeleteFileFromS3 extends Error {
+export class DeleteKnowledgeBaseFileFromS3 extends Error {
 	public cause?: unknown;
 	constructor(message: string, options?: { cause?: unknown }) {
 		super(message);
-		this.name = "DeleteFileFromS3";
+		this.name = "DeleteKnowledgeBaseFileFromS3";
 		if (options?.cause) this.cause = options.cause;
 		Error.captureStackTrace(this, this.constructor);
 	}

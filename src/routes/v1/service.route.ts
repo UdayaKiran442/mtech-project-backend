@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import z from "zod";
-import { deleteFileFromS3, fetchDocumentsFromAWS, uploadFileToAWS, uploadFileToGCP } from "../../controller/service.controller";
+import { deleteKnowledgeBaseFileFromS3, fetchDocumentsFromAWS, uploadFileToAWS, uploadFileToGCP } from "../../controller/service.controller";
 import {
-	DeleteFileFromS3,
+	DeleteKnowledgeBaseFileFromS3,
 	DeleteFileFromS3ServiceError,
 	FetchDocumentsFromAWSError,
 	FetchDocumentsFromS3ServiceError,
@@ -94,14 +94,14 @@ serviceRoute.post("/aws/delete-document", authMiddleware, async (c) => {
 			...validation.data,
 			userId: c.get("user").userId,
 		};
-		await deleteFileFromS3(payload);
+		await deleteKnowledgeBaseFileFromS3(payload);
 		return c.json({ success: true, message: "File deleted successfully" });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
-		if (error instanceof DeleteFileFromS3 || error instanceof GetFileDetailsFromDBError || error instanceof DeleteKnowledgeBaseFileFromDBError || error instanceof DeleteFileFromS3ServiceError) {
+		if (error instanceof DeleteKnowledgeBaseFileFromS3 || error instanceof GetFileDetailsFromDBError || error instanceof DeleteKnowledgeBaseFileFromDBError || error instanceof DeleteFileFromS3ServiceError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
 		if (error instanceof NotFoundError) {
