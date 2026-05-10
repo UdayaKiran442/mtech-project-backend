@@ -134,6 +134,15 @@ export async function addKnowledgeToWorkspace(payload: IAddKnowledgeSchema) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @description
+ * - Call functions concurrently
+ * - Delete vectors from pinecone
+ * - Delete file from AWS and relational db
+ * @returns void
+ */
 export async function deleteKnowledgeFromWorkspace(payload: IDeleteKnowledgeSchema) {
 	try {
 		await Promise.all([deleteFileFromPineconeService({ index: payload.index, fileUrl: payload.fileUrl }), deleteFileFromS3({ key: payload.key, fileId: payload.fileId, userId: payload.userId })]);
