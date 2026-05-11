@@ -35,7 +35,7 @@ app.get("/test", async (c) => {
 app.use(
 	"/*",
 	cors({
-		origin: ["http://localhost:3001"],
+		origin: ["http://localhost:3001", "https://bad9-2406-7400-35-adff-1090-d0b4-e53c-f5bd.ngrok-free.app"],
 	}),
 );
 

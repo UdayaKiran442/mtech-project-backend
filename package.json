@@ -20,6 +20,7 @@
     "hono": "^4.10.6",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.1.6",
+    "octokit": "^5.0.5",
     "pdf-parse": "^1",
     "socket.io": "^4.8.3",
     "zod": "^4.1.12"

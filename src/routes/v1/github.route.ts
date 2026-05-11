@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import fs from "fs";
+import { App } from "octokit";
 import { setCookie } from "hono/cookie";
 import * as arctic from "arctic";
 import github from "../../config/github.config";
@@ -12,6 +14,36 @@ githubRoute.get("/", (c) => {
 	const url = github.createAuthorizationURL(state, scopes);
 
 	return c.json({ url });
+});
+
+githubRoute.get("/app", async (c) => {
+	const private_key = fs.readFileSync("/Users/uday/Downloads/mammalio.pem", "utf-8");
+	const app = new App({
+		appId: "3665302",
+		privateKey: private_key,
+	});
+	const response = await app.octokit.request("/app");
+	const redirectUrl = `https://github.com/apps/${response.data.slug}/installations/new`;
+	return c.json({ message: "App route accessed successfully", redirectUrl });
+});
+
+githubRoute.get("/post-install", async (c) => {
+	const installation_id = c.req.query("installation_id");
+	if (installation_id) {
+		const private_key = fs.readFileSync("/Users/uday/Downloads/mammalio.pem", "utf-8");
+		const app = new App({
+			appId: "3665302",
+			privateKey: private_key,
+		});
+		const response = (await app.octokit.request("GET /app/installations/{installation_id}", {
+			installation_id: Number(installation_id),
+			// biome-ignore lint/suspicious/noExplicitAny: <response.data.account has property login but TypeScript doesn't recognize it>
+		})) as any;
+		if (response.data.account) {
+			const username = response.data.account.login;
+			return c.redirect(`http://localhost:3001/github-success/?${new URLSearchParams({ username, installation_id })}`);
+		}
+	}
 });
 
 // Callback route to handle Github OAuth response

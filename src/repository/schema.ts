@@ -10,6 +10,7 @@ export const users = pgTable(
 		organisationId: varchar("organisation_id"),
 		isGitHubConnected: boolean("is_github_connected").default(false).notNull(),
 		githubUsername: varchar("github_username"),
+		githubInstallationId: varchar("github_installation_id"),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at").defaultNow().notNull(),
 	},
