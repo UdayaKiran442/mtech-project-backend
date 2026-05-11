@@ -52,6 +52,7 @@ export async function getUserByEmailFromDB(email: string) {
 		const user = await db.select().from(users).where(eq(users.email, email));
 		return user[0];
 	} catch (error) {
+		console.log((error as Error).message);
 		throw new GetUserByEmailFromDBError("Failed to get user by email from db", { cause: (error as Error).cause });
 	}
 }
