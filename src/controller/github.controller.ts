@@ -1,4 +1,5 @@
-import { GetAccessibleRepositoriesError, GetAccessibleRepositoriesServiceError } from "../exceptions/octokit.exceptions";
+import { GetAccessibleRepositoriesError } from "../exceptions/github.exceptions";
+import { GetAccessibleRepositoriesServiceError } from "../exceptions/octokit.exceptions";
 import type { IAccessibleRepositoriesSchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories } from "../services/octokit.service";
 

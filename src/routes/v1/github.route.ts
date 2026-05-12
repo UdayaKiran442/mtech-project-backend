@@ -7,7 +7,8 @@ import github from "../../config/github.config";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import z from "zod";
 import { fetchAccessibleRepositories } from "../../controller/github.controller";
-import { GetAccessibleRepositoriesError, GetAccessibleRepositoriesServiceError } from "../../exceptions/octokit.exceptions";
+import { GetAccessibleRepositoriesServiceError } from "../../exceptions/octokit.exceptions";
+import { GetAccessibleRepositoriesError } from "../../exceptions/github.exceptions";
 
 const githubRoute = new Hono();
 
