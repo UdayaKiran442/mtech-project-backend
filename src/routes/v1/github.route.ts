@@ -6,9 +6,9 @@ import * as arctic from "arctic";
 import github from "../../config/github.config";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import z from "zod";
-import { fetchAccessibleRepositories } from "../../controller/github.controller";
-import { GetAccessibleRepositoriesServiceError } from "../../exceptions/octokit.exceptions";
-import { GetAccessibleRepositoriesError } from "../../exceptions/github.exceptions";
+import { fetchAccessibleRepositories, getRepositoryBranches } from "../../controller/github.controller";
+import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError } from "../../exceptions/octokit.exceptions";
+import { GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../../exceptions/github.exceptions";
 
 const githubRoute = new Hono();
 
@@ -101,6 +101,38 @@ githubRoute.post("/accessible-repositories", authMiddleware, async (c) => {
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
 		if (error instanceof GetAccessibleRepositoriesServiceError || error instanceof GetAccessibleRepositoriesError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
+});
+
+const GetRepositoryBranchesSchema = z.object({
+	installationId: z.string(),
+	owner: z.string(),
+	repo: z.string(),
+});
+
+export type IGetRepositoryBranchesSchema = z.infer<typeof GetRepositoryBranchesSchema>;
+
+githubRoute.post("/repository-branches", authMiddleware, async (c) => {
+	try {
+		const validation = GetRepositoryBranchesSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const branches = await getRepositoryBranches(payload);
+		return c.json({ success: true, branches });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (error instanceof GetRepositoryBranchesServiceError || error instanceof GetRepositoryBranchesError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
