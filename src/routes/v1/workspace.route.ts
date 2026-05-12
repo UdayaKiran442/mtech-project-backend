@@ -1,19 +1,29 @@
 import { Hono } from "hono";
 import z from "zod";
 import { authMiddleware } from "../../middleware/authentication.middleware";
-import { addKnowledgeToWorkspace, createWorkspace, fetchWorkspaceMembers, isWorkspaceUrlUnique } from "../../controller/workspace.controller";
+import { addKnowledgeToWorkspace, createWorkspace, deleteKnowledgeFromWorkspace, fetchWorkspaceMembers, isWorkspaceUrlUnique } from "../../controller/workspace.controller";
 import { UpdateUserInDBError } from "../../exceptions/user.exceptions";
 import {
 	AddKnowledgeToWorkspaceError,
 	CheckIfWorkspaceUrlIsUniqueInDBError,
 	CreateWorkspaceError,
 	CreateWorkspaceInDBError,
+	DeleteKnowledgeFromWorkspaceError,
 	FetchWorkspaceMembersError,
 	IsWorkspaceUrlUniqueError,
 } from "../../exceptions/workspace.exceptions";
 import { AddWorkspaceMemberInDBError, FetchWorkspaceMembersInDBError } from "../../exceptions/workspaceMember.exceptions";
-import { AddKnowledgeBaseInDBError } from "../../exceptions/knowledgeBase.exceptions";
-import { ConvertTextToChunkServiceError, ConvertTextToEmbeddingsServiceError, ExtractTextFromS3FileServiceError, UpsertEmbeddingsServiceError } from "../../exceptions/service.exceptions";
+import { AddKnowledgeBaseInDBError, DeleteKnowledgeBaseFileFromDBError, GetFileDetailsFromDBError } from "../../exceptions/knowledgeBase.exceptions";
+import {
+	ConvertTextToChunkServiceError,
+	ConvertTextToEmbeddingsServiceError,
+	DeleteFileFromPineconeServiceError,
+	DeleteKnowledgeBaseFileFromS3,
+	DeleteFileFromS3ServiceError,
+	ExtractTextFromS3FileServiceError,
+	UpsertEmbeddingsServiceError,
+} from "../../exceptions/service.exceptions";
+import { NotFoundError } from "../../exceptions/common.exceptions";
 
 const workspaceRoute = new Hono();
 
@@ -111,6 +121,7 @@ const AddKnowledgeSchema = z.object({
 	workspaceId: z.string(),
 	fileUrl: z.string(),
 	key: z.string(),
+	index: z.string(),
 });
 
 export type IAddKnowledgeSchema = z.infer<typeof AddKnowledgeSchema> & { uploadedBy: string };
@@ -143,6 +154,49 @@ workspaceRoute.post("/add-knowledge", authMiddleware, async (c) => {
 			return c.json({ success: false, message: error.message, error: error.cause }, 500);
 		}
 		return c.json({ success: false, message: "Failed to add knowledge to workspace", error: (error as Error).message }, 500);
+	}
+});
+
+const DeleteKnowledgeSchema = z.object({
+	fileId: z.string(),
+	key: z.string(),
+	fileUrl: z.string(),
+	index: z.string(),
+});
+
+export type IDeleteKnowledgeSchema = z.infer<typeof DeleteKnowledgeSchema> & { userId: string };
+
+workspaceRoute.post("/delete-knowledge", authMiddleware, async (c) => {
+	try {
+		const validation = DeleteKnowledgeSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		await deleteKnowledgeFromWorkspace(payload);
+		return c.json({ success: true });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (
+			error instanceof DeleteFileFromPineconeServiceError ||
+			error instanceof GetFileDetailsFromDBError ||
+			error instanceof DeleteKnowledgeBaseFileFromDBError ||
+			error instanceof DeleteFileFromS3ServiceError ||
+			error instanceof DeleteKnowledgeBaseFileFromS3 ||
+			error instanceof DeleteKnowledgeFromWorkspaceError
+		) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		if (error instanceof NotFoundError) {
+			return c.json({ success: false, message: error.message }, 404);
+		}
+		return c.json({ success: false, message: "Failed to delete knowledge from workspace", error: (error as Error).message }, 500);
 	}
 });
 

@@ -2,9 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import v1Router from "./routes";
-import { convertTextToChunkService, extractTextFromS3FileService } from "./services/langchain.service";
-import { convertTextToEmbeddingsService } from "./services/python.service";
-import { upsertEmbeddingsService } from "./services/pinecone.service";
+
 
 import { generateNanoId } from "./utils/nano.utils";
 import engine from "./config/websocket.config";
@@ -21,16 +19,6 @@ app.get("/test1", (c) => {
 	return c.text(`Hello World! ${nanoid}`);
 });
 
-app.get("/test", async (c) => {
-	const result = await extractTextFromS3FileService("default-workspace/MWjrgU-4L8lZoRirlMstG.pdf");
-	const chunks = await convertTextToChunkService(result);
-	const embeddings = await convertTextToEmbeddingsService(chunks);
-	await upsertEmbeddingsService({
-		vectors: embeddings.embeddings,
-		metadata: { workspaceId: "test", uploadedBy: "tester" },
-	});
-	return c.json({ success: true });
-});
 
 app.use(
 	"/*",

@@ -1,4 +1,13 @@
-import { AddUserInDBError, GetUserByEmailFromDBError, GetUserWorkspacesError, InvalidCredentialsError, LoginUserError, RegisterUserError, UpdateUserError, UpdateUserInDBError } from "../exceptions/user.exceptions";
+import {
+	AddUserInDBError,
+	GetUserByEmailFromDBError,
+	GetUserWorkspacesError,
+	InvalidCredentialsError,
+	LoginUserError,
+	RegisterUserError,
+	UpdateUserError,
+	UpdateUserInDBError,
+} from "../exceptions/user.exceptions";
 import { GetUserWorkspacesFromDBError } from "../exceptions/workspaceMember.exceptions";
 import { addUserInDB, getUserByEmailFromDB, updateUserInDB } from "../repository/user.repository";
 import { getUserWorkspacesFromDB } from "../repository/workspaceMembers.repository";
@@ -8,12 +17,12 @@ import { comparePassword, hashPassword } from "../utils/bcrypt.utils";
 import { generateJwtToken } from "../utils/jwt.utils";
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @description Register new user
  * - It first hashed the password and the calls the repository function to add user in the database
  * - JWT Token is generated for the new user and returned along with new user details
- * @returns new user and JWT token 
+ * @returns new user and JWT token
  */
 export async function registerUser(payload: IRegisterUserSchema) {
 	try {
@@ -34,8 +43,8 @@ export async function registerUser(payload: IRegisterUserSchema) {
 }
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @description This function is used to login a user
  * - Checks for user, then compares the password and if valid, generates a JWT token and returns it
  * - If invalid credentials, it throws an error
@@ -44,19 +53,23 @@ export async function registerUser(payload: IRegisterUserSchema) {
 export async function loginUser(payload: ILoginUserSchema) {
 	try {
 		const user = await getUserByEmailFromDB(payload.email);
+		if (!user) {
+			// throw error
+			throw new InvalidCredentialsError("Invalid user email/passwordt", { cause: "Invalid credentials" });
+		}
 		const isValidPassword = await comparePassword({
 			hashedPassword: user.passwordHash,
 			password: payload.password,
 		});
 		if (!isValidPassword) {
 			// throw error
-			throw new InvalidCredentialsError("Invalid password", { cause: "Invalid user email/password" });
+			throw new InvalidCredentialsError("Invalid user email/password", { cause: "Invalid credentials" });
 		}
 		return generateJwtToken({
 			userId: user.userId,
 		});
 	} catch (error) {
-		if (error instanceof GetUserByEmailFromDBError) {
+		if (error instanceof GetUserByEmailFromDBError || error instanceof InvalidCredentialsError) {
 			throw error;
 		}
 		throw new LoginUserError("Failed to login user", { cause: (error as Error).cause });
@@ -64,17 +77,17 @@ export async function loginUser(payload: ILoginUserSchema) {
 }
 
 /**
- * 
- * @param userId 
+ *
+ * @param userId
  * @description Get workspaces user is part of
  * - It calls the repository function to get user workspaces from the database and returns it
  * @returns Workspaces user is part of
  */
-export async function getUserWorkspaces(userId: string){
+export async function getUserWorkspaces(userId: string) {
 	try {
 		return await getUserWorkspacesFromDB(userId);
 	} catch (error) {
-		if (error instanceof GetUserWorkspacesFromDBError){
+		if (error instanceof GetUserWorkspacesFromDBError) {
 			throw error;
 		}
 		throw new GetUserWorkspacesError("Failed to get user workspaces", { cause: (error as Error).cause });
@@ -82,8 +95,8 @@ export async function getUserWorkspaces(userId: string){
 }
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @description Update existing user with details provided in the payload
  * - It calls the repository function to update user in the database
  */

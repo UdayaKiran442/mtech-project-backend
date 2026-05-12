@@ -72,8 +72,11 @@ userRoute.post("/login", async (c) => {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
-		if (error instanceof GetUserByEmailFromDBError || error instanceof LoginUserError || error instanceof InvalidCredentialsError) {
-			return c.json({ success: false, message: error.message, error: error.cause }, 500);
+		if (error instanceof GetUserByEmailFromDBError || error instanceof LoginUserError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		if (error instanceof InvalidCredentialsError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 401);
 		}
 		return c.json({ success: false, message: "Failed to register new user", error: (error as Error).message }, 500);
 	}

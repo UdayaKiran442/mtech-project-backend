@@ -1,6 +1,6 @@
-import { S3, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import * as fs from "fs";
-import { FetchDocumentsFromS3ServiceError, UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
+import { DeleteFileFromS3ServiceError, FetchDocumentsFromS3ServiceError, UploadFileToS3ServiceError } from "../exceptions/service.exceptions";
 
 const s3 = new S3({
 	region: process.env.AWS_REGION,
@@ -50,5 +50,17 @@ export async function fetchDocumentsFromS3Service(workspaceId: string) {
 		return documents ?? [];
 	} catch (error) {
 		throw new FetchDocumentsFromS3ServiceError("Failed to fetch documents from AWS S3", { cause: (error as Error).message });
+	}
+}
+
+export async function deleteFileFromS3Service(payload: { bucketName: string; key: string }) {
+	try {
+		const command = new DeleteObjectCommand({
+			Bucket: payload.bucketName,
+			Key: payload.key,
+		});
+		await s3.send(command);
+	} catch (error) {
+		throw new DeleteFileFromS3ServiceError("Failed to delete file from AWS S3", { cause: (error as Error).message });
 	}
 }

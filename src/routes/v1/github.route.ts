@@ -1,7 +1,13 @@
 import { Hono } from "hono";
+import fs from "fs";
+import { App } from "octokit";
 import { setCookie } from "hono/cookie";
 import * as arctic from "arctic";
 import github from "../../config/github.config";
+import { authMiddleware } from "../../middleware/authentication.middleware";
+import z from "zod";
+import { fetchAccessibleRepositories } from "../../controller/github.controller";
+import { GetAccessibleRepositoriesError, GetAccessibleRepositoriesServiceError } from "../../exceptions/octokit.exceptions";
 
 const githubRoute = new Hono();
 
@@ -14,6 +20,36 @@ githubRoute.get("/", (c) => {
 	return c.json({ url });
 });
 
+githubRoute.get("/app", async (c) => {
+	const private_key = fs.readFileSync("/Users/uday/Downloads/mammalio.pem", "utf-8");
+	const app = new App({
+		appId: "3665302",
+		privateKey: private_key,
+	});
+	const response = await app.octokit.request("/app");
+	const redirectUrl = `https://github.com/apps/${response.data.slug}/installations/new`;
+	return c.json({ message: "App route accessed successfully", redirectUrl });
+});
+
+githubRoute.get("/post-install", async (c) => {
+	const installation_id = c.req.query("installation_id");
+	if (installation_id) {
+		const private_key = fs.readFileSync("/Users/uday/Downloads/mammalio.pem", "utf-8");
+		const app = new App({
+			appId: "3665302",
+			privateKey: private_key,
+		});
+		const response = (await app.octokit.request("GET /app/installations/{installation_id}", {
+			installation_id: Number(installation_id),
+			// biome-ignore lint/suspicious/noExplicitAny: <response.data.account has property login but TypeScript doesn't recognize it>
+		})) as any;
+		if (response.data.account) {
+			const username = response.data.account.login;
+			return c.redirect(`http://localhost:3001/github-success/?${new URLSearchParams({ username, installation_id })}`);
+		}
+	}
+});
+
 // Callback route to handle Github OAuth response
 githubRoute.get("/callback", async (c) => {
 	// Extract the authorization code from the query parameters
@@ -24,8 +60,9 @@ githubRoute.get("/callback", async (c) => {
 	// extract access token using the authorization code and fetch user details from Github API
 	const tokens = await github.validateAuthorizationCode(code);
 	const accessToken = tokens.accessToken();
+	// Cookie is set in browser
 	setCookie(c, "github_access_token", accessToken, {
-		secure: true,
+		secure: false, // Set to true in production when using HTTPS
 		httpOnly: true,
 	});
 	const githubUserResponse = await fetch("https://api.github.com/user", {
@@ -37,6 +74,36 @@ githubRoute.get("/callback", async (c) => {
 	const data = await githubUserResponse.json();
 	// redirect to frontend with github username and access token as query parameters
 	return c.redirect(`http://localhost:3001/github-success/?${new URLSearchParams({ username: data.login })}`);
+});
+
+const AccessibleRepositoriesSchema = z.object({
+	installationId: z.string(),
+});
+
+export type IAccessibleRepositoriesSchema = z.infer<typeof AccessibleRepositoriesSchema>;
+
+githubRoute.post("/accessible-repositories", authMiddleware, async (c) => {
+	try {
+		const validation = AccessibleRepositoriesSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const repositories = await fetchAccessibleRepositories(payload);
+		return c.json({ success: true, repositories: repositories });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (error instanceof GetAccessibleRepositoriesServiceError || error instanceof GetAccessibleRepositoriesError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
 });
 
 export default githubRoute;
