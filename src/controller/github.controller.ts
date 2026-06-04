@@ -1,6 +1,7 @@
-import { GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../exceptions/github.exceptions";
+import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../exceptions/github.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError } from "../exceptions/octokit.exceptions";
-import type { IAccessibleRepositoriesSchema, IGetRepositoryBranchesSchema } from "../routes/v1/github.route";
+import { checkIfRepoParsedInDB } from "../repository/github.repository";
+import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getRepositoryBranchesService } from "../services/octokit.service";
 
 export async function fetchAccessibleRepositories(payload: IAccessibleRepositoriesSchema) {
@@ -28,6 +29,19 @@ export async function getRepositoryBranches(payload: IGetRepositoryBranchesSchem
 			throw error;
 		}
 		throw new GetRepositoryBranchesError("Failed to fetch repository branches", {
+			cause: (error as Error).message,
+		});
+	}
+}
+
+export async function checkIfRepoParsed(payload: ICheckIfRepoParsedSchema) {
+	try {
+		return await checkIfRepoParsedInDB(payload);
+	} catch (error) {
+		if (error instanceof CheckIfRepoParsedInDBError) {
+			throw error;
+		}
+		throw new CheckIfRepoParsedError("Failed to check if repository is parsed", {
 			cause: (error as Error).message,
 		});
 	}

@@ -6,9 +6,9 @@ import * as arctic from "arctic";
 import github from "../../config/github.config";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import z from "zod";
-import { fetchAccessibleRepositories, getRepositoryBranches } from "../../controller/github.controller";
+import { checkIfRepoParsed, fetchAccessibleRepositories, getRepositoryBranches } from "../../controller/github.controller";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError } from "../../exceptions/octokit.exceptions";
-import { GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../../exceptions/github.exceptions";
+import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../../exceptions/github.exceptions";
 
 const githubRoute = new Hono();
 
@@ -133,6 +133,37 @@ githubRoute.post("/repository-branches", authMiddleware, async (c) => {
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
 		if (error instanceof GetRepositoryBranchesServiceError || error instanceof GetRepositoryBranchesError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
+});
+
+const CheckIfRepoParsedSchema = z.object({
+	repoName: z.string(),
+	branch: z.string(),
+});
+
+export type ICheckIfRepoParsedSchema = z.infer<typeof CheckIfRepoParsedSchema> & { userId: string };
+
+githubRoute.post("/check-repo-parsed", authMiddleware, async (c) => {
+	try {
+		const validation = CheckIfRepoParsedSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const isParsed = await checkIfRepoParsed(payload);
+		return c.json({ success: true, isParsed });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
+		if (error instanceof CheckIfRepoParsedInDBError || error instanceof CheckIfRepoParsedError) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);

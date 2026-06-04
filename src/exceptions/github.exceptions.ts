@@ -17,3 +17,23 @@ export class GetRepositoryBranchesError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class CheckIfRepoParsedInDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "CheckIfRepoParsedInDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+export class CheckIfRepoParsedError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "CheckIfRepoParsedInDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

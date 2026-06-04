@@ -121,3 +121,12 @@ export const messages = pgTable(
 		senderIdIdx: index("sender_id_idx_messages").on(messages.senderId),
 	}),
 );
+
+export const parsedRepos = pgTable("parsed_repos", {
+	repoName: varchar("repo_name").primaryKey(),
+	branch: varchar("branch").notNull(),
+	userId: varchar("user_id").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (parsedRepos) => [
+	primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId] }),
+])
