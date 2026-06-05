@@ -6,19 +6,30 @@ import v1Router from "./routes";
 import { generateNanoId } from "./utils/nano.utils";
 import engine from "./config/websocket.config";
 import type { WebSocketData } from "@socket.io/bun-engine";
-import { getRepositoryBranchDetailsService, getRepositoryContentService } from "./services/octokit.service";
+import { getRepositoryContentService } from "./services/octokit.service";
 
 const app = new Hono();
 
 app.get("/", async (c) => {
-	const branchDetails = await getRepositoryBranchDetailsService({
+	const branchDetails = await getRepositoryContentService({
 		branch: "main",
 		owner: "UdayaKiran442",
 		repo: "dummy-repository",
 		installationId: 131321944,
 	});
+	console.log(branchDetails);
 	return c.json({ success: true, branchDetails });
 });
+
+app.get('/test3', async (c) => {
+  	const fileArchitecture = await getRepositoryContentService({
+		branch: "main",
+		owner: "UdayaKiran442",
+		repo: "dummy-repository",
+		installationId: 131321944,
+	});
+  return c.json({fileArchitecture});
+})
 
 app.get("/test2", async (c) => {
 	const branchDetails = await getRepositoryContentService({

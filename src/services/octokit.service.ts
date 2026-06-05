@@ -57,9 +57,22 @@ export async function getRepositoryBranchDetailsService(payload: { installationI
 	}
 }
 
-export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }) {
+export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string) {
 	const octokit = octokitInstance(payload.installationId);
 	try {
+		if (path) {
+			const response = (await octokit).request("GET /repos/{owner}/{repo}/contents/{path}", {
+				owner: payload.owner,
+				repo: payload.repo,
+				ref: payload.branch,
+				path,
+				headers: {
+					"X-GitHub-Api-Version": "2026-03-10",
+					Accept: "application/vnd.github+json",
+				},
+			});
+			return (await response).data;
+		}
 		const response = (await octokit).request("GET /repos/{owner}/{repo}/contents", {
 			owner: payload.owner,
 			repo: payload.repo,

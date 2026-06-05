@@ -6,7 +6,7 @@ import * as arctic from "arctic";
 import github from "../../config/github.config";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import z from "zod";
-import { checkIfRepoParsed, fetchAccessibleRepositories, getRepositoryBranches } from "../../controller/github.controller";
+import { checkIfRepoParsed, fetchAccessibleRepositories, getRepositoryBranches, parseRepository } from "../../controller/github.controller";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError } from "../../exceptions/octokit.exceptions";
 import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../../exceptions/github.exceptions";
 
@@ -167,6 +167,35 @@ githubRoute.post("/check-repo-parsed", authMiddleware, async (c) => {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
+});
+
+const ParseRepositorySchema = z.object({
+	installationId: z.number().positive(),
+	owner: z.string(),
+	repoName: z.string(),
+	branch: z.string(),
+});
+
+export type IParsedRepositorySchema = z.infer<typeof ParseRepositorySchema> & { userId: string };
+
+githubRoute.post("/parse-repository", authMiddleware, async (c) => {
+	try {
+		const validation = ParseRepositorySchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const allFiles = await parseRepository(payload);
+		return c.json({ success: true, message: "Repository parsed successfully", allFiles });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
+		}
 	}
 });
 
