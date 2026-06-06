@@ -16,7 +16,7 @@ app.get("/", async (c) => {
 		owner: "UdayaKiran442",
 		repo: "dummy-repository",
 		installationId: 131321944,
-	});
+	}, "src/index.ts");
 	console.log(branchDetails);
 	return c.json({ success: true, branchDetails });
 });

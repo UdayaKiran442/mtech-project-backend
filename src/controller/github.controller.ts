@@ -1,8 +1,12 @@
-import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../exceptions/github.exceptions";
+import pLimit from "p-limit";
+import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError, TraverseDirectoryError } from "../exceptions/github.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
 import { checkIfRepoParsedInDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
+import { IRepoFile } from "../types/types";
+
+const limit = pLimit(10);
 
 export async function fetchAccessibleRepositories(payload: IAccessibleRepositoriesSchema) {
 	try {
@@ -58,63 +62,71 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 
 		return allFiles;
 	} catch (error) {
-		if (error instanceof GetRepositoryContentServiceError) {
+		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError) {
 			throw error;
 		}
 	}
 }
 
-const allFiles: string[] = [];
-
-export async function traverseDirectory(payload: IParsedRepositorySchema, path?: string) {
+export async function traverseDirectory(payload: IParsedRepositorySchema, path?: string): Promise<string[]> {
 	try {
-		// biome-ignore lint/suspicious/noImplicitAnyLet: <TODO: write type for content>
-		let contents;
-		if (path) {
-			contents = await getRepositoryContentService(
-				{
+		const contents = path
+			? await getRepositoryContentService(
+					{
+						branch: payload.branch,
+						owner: payload.owner,
+						repo: payload.repoName,
+						installationId: payload.installationId,
+					},
+					path,
+				)
+			: await getRepositoryContentService({
 					branch: payload.branch,
 					owner: payload.owner,
 					repo: payload.repoName,
 					installationId: payload.installationId,
-				},
-				path,
-			);
-		} else {
-			contents = await getRepositoryContentService({
-				branch: payload.branch,
-				owner: payload.owner,
-				repo: payload.repoName,
-				installationId: payload.installationId,
-			});
-		}
-		for (const item of contents) {
-			if (
-				item.name === ".gitignore" ||
-				item.name === "dist" ||
-				item.name === "build" ||
-				item.name === "package.json" ||
-				item.name === "package-lock.json" ||
-				item.name === "yarn.lock" ||
-				item.name === "pnpm-lock.yaml" ||
-				item.name === "bun.lock"
-			) {
-				continue;
-			}
+				});
 
-			if (item.type === "dir") {
-				await traverseDirectory(payload, item.path);
-			}
+		const files: string[] = [];
 
-			if (item.type === "file") {
-				console.log(item.path);
-				allFiles.push(item.path);
-			}
+		const tasks = contents.map((item: IRepoFile) =>
+			limit(async () => {
+				if (
+					item.name === ".gitignore" ||
+					item.name === "dist" ||
+					item.name === "build" ||
+					item.name === "package.json" ||
+					item.name === "package-lock.json" ||
+					item.name === "yarn.lock" ||
+					item.name === "pnpm-lock.yaml" ||
+					item.name === "bun.lock"
+				) {
+					return [];
+				}
+
+				if (item.type === "file") {
+					return [item.path];
+				}
+
+				if (item.type === "dir") {
+					return traverseDirectory(payload, item.path);
+				}
+
+				return [];
+			}),
+		);
+
+		const results = await Promise.all(tasks);
+
+		for (const result of results) {
+			files.push(...result);
 		}
-		return allFiles;
+
+		return files;
 	} catch (error) {
 		if (error instanceof GetRepositoryContentServiceError) {
 			throw error;
 		}
+		throw new TraverseDirectoryError("Failed to traverse directory", { cause: (error as Error).message });
 	}
 }

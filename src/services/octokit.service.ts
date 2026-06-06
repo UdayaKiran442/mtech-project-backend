@@ -1,5 +1,6 @@
 import octokitInstance from "../config/octokit.config";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchDetailsServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
+import { IRepoFile } from "../types/types";
 
 export async function getAccessibleRepositories(installationId: number) {
 	const octokit = octokitInstance(installationId);
@@ -57,7 +58,7 @@ export async function getRepositoryBranchDetailsService(payload: { installationI
 	}
 }
 
-export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string) {
+export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string): Promise<IRepoFile[]> {
 	const octokit = octokitInstance(payload.installationId);
 	try {
 		if (path) {
@@ -71,7 +72,7 @@ export async function getRepositoryContentService(payload: { installationId: num
 					Accept: "application/vnd.github+json",
 				},
 			});
-			return (await response).data;
+			return ((await response).data as IRepoFile[]);
 		}
 		const response = (await octokit).request("GET /repos/{owner}/{repo}/contents", {
 			owner: payload.owner,
@@ -82,7 +83,7 @@ export async function getRepositoryContentService(payload: { installationId: num
 				Accept: "application/vnd.github+json",
 			},
 		});
-		return (await response).data;
+		return ((await response).data) as IRepoFile[];
 	} catch (error) {
 		throw new GetRepositoryContentServiceError("Failed to fetch repository content from service from installed app", {
 			cause: (error as Error).message,
