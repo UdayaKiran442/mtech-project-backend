@@ -4,7 +4,7 @@ import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceErro
 import { checkIfRepoParsedInDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
-import { IRepoFile } from "../types/types";
+import type { IRepoFile } from "../types/types";
 
 const limit = pLimit(10);
 
