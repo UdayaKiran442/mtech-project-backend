@@ -1,6 +1,6 @@
 import octokitInstance from "../config/octokit.config";
 import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchDetailsServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
-import { IRepoFile } from "../types/types";
+import type { IRepoFile } from "../types/types";
 
 export async function getAccessibleRepositories(installationId: number) {
 	const octokit = octokitInstance(installationId);
