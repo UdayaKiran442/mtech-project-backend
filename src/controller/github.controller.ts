@@ -56,9 +56,13 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 		// fetch all files in the repository
 		const allFiles = await traverseDirectory(payload);
 
-		// create nodes of all files along with their properties
+		// for each file
+			// fetch file content
 
-		// create edges between the nodes based on the relationships between the files
+			// create a node in graph database for the file with label File and properties like name, path, type, content
+
+			// extract imports and create edges between the nodes 
+
 
 		return allFiles;
 	} catch (error) {

@@ -7,6 +7,7 @@ import { generateNanoId } from "./utils/nano.utils";
 import engine from "./config/websocket.config";
 import type { WebSocketData } from "@socket.io/bun-engine";
 import { getRepositoryContentService } from "./services/octokit.service";
+import connectToNeo4j from './config/neo4j.config';
 
 const app = new Hono();
 
@@ -44,6 +45,17 @@ app.get("/test2", async (c) => {
 app.get("/test1", (c) => {
 	const nanoid = `msg_${generateNanoId()}`;
 	return c.text(`Hello World! ${nanoid}`);
+});
+
+app.get("/neo4j-health-check", async (c) => {
+	const driver = await connectToNeo4j();
+	if (!driver) {
+		return c.text(`Failed to connect to Neo4j database.`);
+	}
+	const query = driver.session().run("RETURN 'Hello, Neo4j!' AS message");
+	const result = await query;
+	const message = result.records[0].get("message");
+	return c.text(`Hello World! Neo4j connection test successful. Message: ${message}`);
 });
 
 app.use(
