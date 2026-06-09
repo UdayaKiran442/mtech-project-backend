@@ -34,13 +34,31 @@ export type IUpdateUserPayload = {
 // 	};
 // };
 
-export type IRepoFile = {
+export type IRepoFolder = {
     type: "dir" | "file" | "submodule" | "symlink";
     size: number;
     name: string;
     path: string;
-    content?: string | undefined;
-	encoding?: string | undefined;
+    sha: string;
+    url: string;
+    git_url: string | null;
+    html_url: string | null;
+    download_url: string | null;
+    _links: {
+        git: string | null;
+        html: string | null;
+        self: string;
+    };
+}
+
+
+export type IRepoFileContent = {
+    type: "dir" | "file" | "submodule" | "symlink";
+    size: number;
+    name: string;
+    path: string;
+    content: string;
+	encoding: string;
     sha: string;
     url: string;
     git_url: string | null;

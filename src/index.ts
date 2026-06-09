@@ -8,6 +8,7 @@ import engine from "./config/websocket.config";
 import type { WebSocketData } from "@socket.io/bun-engine";
 import { getRepositoryContentService } from "./services/octokit.service";
 import connectToNeo4j from './config/neo4j.config';
+import { getFileContent } from "./controller/github.controller";
 
 const app = new Hono();
 
@@ -45,6 +46,18 @@ app.get("/test2", async (c) => {
 app.get("/test1", (c) => {
 	const nanoid = `msg_${generateNanoId()}`;
 	return c.text(`Hello World! ${nanoid}`);
+});
+
+app.get("/test4", async (c) => {
+	const content = await getFileContent({
+		branch: "main",
+		owner: "UdayaKiran442",
+		repoName: "dummy-repository",
+		installationId: 131321944,
+		userId: "erf"
+	}, "src/index.ts");
+	console.log(content);
+	return c.json({ success: true, content });
 });
 
 app.get("/neo4j-health-check", async (c) => {

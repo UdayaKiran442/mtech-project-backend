@@ -1,6 +1,12 @@
 import octokitInstance from "../config/octokit.config";
-import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchDetailsServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
-import type { IRepoFile } from "../types/types";
+import {
+	GetAccessibleRepositoriesServiceError,
+	GetFileContentServiceError,
+	GetRepositoryBranchDetailsServiceError,
+	GetRepositoryBranchesServiceError,
+	GetRepositoryContentServiceError,
+} from "../exceptions/octokit.exceptions";
+import type { IRepoFileContent, IRepoFolder } from "../types/types";
 
 export async function getAccessibleRepositories(installationId: number) {
 	const octokit = octokitInstance(installationId);
@@ -58,7 +64,7 @@ export async function getRepositoryBranchDetailsService(payload: { installationI
 	}
 }
 
-export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string): Promise<IRepoFile[]> {
+export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string): Promise<IRepoFolder[]> {
 	const octokit = octokitInstance(payload.installationId);
 	try {
 		if (path) {
@@ -72,7 +78,7 @@ export async function getRepositoryContentService(payload: { installationId: num
 					Accept: "application/vnd.github+json",
 				},
 			});
-			return ((await response).data as IRepoFile[]);
+			return (await response).data as IRepoFolder[];
 		}
 		const response = (await octokit).request("GET /repos/{owner}/{repo}/contents", {
 			owner: payload.owner,
@@ -83,9 +89,30 @@ export async function getRepositoryContentService(payload: { installationId: num
 				Accept: "application/vnd.github+json",
 			},
 		});
-		return ((await response).data) as IRepoFile[];
+		return (await response).data as IRepoFolder[];
 	} catch (error) {
 		throw new GetRepositoryContentServiceError("Failed to fetch repository content from service from installed app", {
+			cause: (error as Error).message,
+		});
+	}
+}
+
+export async function getFileContentService(payload: { installationId: number; owner: string; repo: string; branch: string; path: string }): Promise<IRepoFileContent> {
+	try {
+		const octokit = octokitInstance(payload.installationId);
+		const response = (await octokit).request("GET /repos/{owner}/{repo}/contents/{path}", {
+			owner: payload.owner,
+			repo: payload.repo,
+			ref: payload.branch,
+			path: payload.path,
+			headers: {
+				"X-GitHub-Api-Version": "2026-03-10",
+				Accept: "application/vnd.github+json",
+			},
+		});
+		return (await response).data as IRepoFileContent;
+	} catch (error) {
+		throw new GetFileContentServiceError("Failed to fetch file content from service from installed app", {
 			cause: (error as Error).message,
 		});
 	}
