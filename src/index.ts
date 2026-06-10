@@ -7,31 +7,35 @@ import { generateNanoId } from "./utils/nano.utils";
 import engine from "./config/websocket.config";
 import type { WebSocketData } from "@socket.io/bun-engine";
 import { getRepositoryContentService } from "./services/octokit.service";
-import connectToNeo4j from './config/neo4j.config';
+import connectToNeo4j from "./config/neo4j.config";
 import { getFileContent } from "./controller/github.controller";
+import { queryNeo4jService } from "./services/neo4j.service";
 
 const app = new Hono();
 
 app.get("/", async (c) => {
-	const branchDetails = await getRepositoryContentService({
-		branch: "main",
-		owner: "UdayaKiran442",
-		repo: "dummy-repository",
-		installationId: 131321944,
-	}, "src/index.ts");
+	const branchDetails = await getRepositoryContentService(
+		{
+			branch: "main",
+			owner: "UdayaKiran442",
+			repo: "dummy-repository",
+			installationId: 131321944,
+		},
+		"src/index.ts",
+	);
 	console.log(branchDetails);
 	return c.json({ success: true, branchDetails });
 });
 
-app.get('/test3', async (c) => {
-  	const fileArchitecture = await getRepositoryContentService({
+app.get("/test3", async (c) => {
+	const fileArchitecture = await getRepositoryContentService({
 		branch: "main",
 		owner: "UdayaKiran442",
 		repo: "dummy-repository",
 		installationId: 131321944,
 	});
-  return c.json({fileArchitecture});
-})
+	return c.json({ fileArchitecture });
+});
 
 app.get("/test2", async (c) => {
 	const branchDetails = await getRepositoryContentService({
@@ -49,15 +53,31 @@ app.get("/test1", (c) => {
 });
 
 app.get("/test4", async (c) => {
-	const fileContent = await getFileContent({
-		branch: "main",
-		owner: "UdayaKiran442",
-		repoName: "dummy-repository",
-		installationId: 131321944,
-		userId: "erf"
-	}, "src/utls/utils.ts");
+	const fileContent = await getFileContent(
+		{
+			branch: "main",
+			owner: "UdayaKiran442",
+			repoName: "dummy-repository",
+			installationId: 131321944,
+			userId: "erf",
+		},
+		"src/utls/utils.ts",
+	);
+
 	return c.json({ success: true, fileContent });
 });
+
+app.get("/test5", async (c) => {
+	const query = `MERGE (f:File {path: $path}) SET f.path = $path, f.fileName = $name, f.type = $type, f.content = $content`;
+	await queryNeo4jService(query, {
+		path: "src/controller/index.ts",
+		name: "index.ts",
+		type: "ts",
+		content: "console.log('Hello, Neo4j controller!')",
+	});
+	return c.json({ success: true, message: "File content stored in Neo4j successfully" });
+});
+
 
 app.get("/neo4j-health-check", async (c) => {
 	const driver = await connectToNeo4j();
