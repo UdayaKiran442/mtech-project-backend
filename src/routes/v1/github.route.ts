@@ -7,8 +7,16 @@ import github from "../../config/github.config";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 import z from "zod";
 import { checkIfRepoParsed, fetchAccessibleRepositories, getRepositoryBranches, parseRepository } from "../../controller/github.controller";
-import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError } from "../../exceptions/octokit.exceptions";
-import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError } from "../../exceptions/github.exceptions";
+import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../../exceptions/octokit.exceptions";
+import {
+	CheckIfRepoParsedError,
+	CheckIfRepoParsedInDBError,
+	GetAccessibleRepositoriesError,
+	GetRepositoryBranchesError,
+	ProcessFileContentError,
+	TraverseDirectoryError,
+} from "../../exceptions/github.exceptions";
+import { QueryNeo4jServiceError } from "../../exceptions/neo4j.exceptions";
 
 const githubRoute = new Hono();
 
@@ -196,6 +204,10 @@ githubRoute.post("/parse-repository", authMiddleware, async (c) => {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
+		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError || error instanceof QueryNeo4jServiceError || error instanceof ProcessFileContentError) {
+			return c.json({ success: false, message: error.message, error: error.cause }, 400);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
 	}
 });
 

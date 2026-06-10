@@ -1,20 +1,19 @@
 import connectToNeo4j from "../config/neo4j.config";
-import { ConnectToNeo4jError, UpsertNodeToNeo4jError } from "../exceptions/neo4j.exceptions";
+import { ConnectToNeo4jError, QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
 
-export async function upsertNodeToNeo4jService(query: string) {
+// biome-ignore lint/suspicious/noExplicitAny: <due to dynamic nature of query parameters, using any type for params>
+export async function queryNeo4jService(query: string, params?: Record<string, any>) {
 	try {
 		const driver = await connectToNeo4j();
-		if (!driver) {
-			throw new Error("Failed to connect to Neo4j database.");
-		}
 		const session = driver.session();
-		await session.run(query);
+		await session.run(query, params);
 		await session.close();
 		await driver.close();
 	} catch (error) {
+        console.error("Error querying Neo4j database:", error);
 		if (error instanceof ConnectToNeo4jError) {
 			throw error;
 		}
-		throw new UpsertNodeToNeo4jError("Failed to upsert node to Neo4j database", { cause: (error as Error).message });
+		throw new QueryNeo4jServiceError("Failed to query Neo4j database", { cause: (error as Error).message });
 	}
 }

@@ -49,15 +49,14 @@ app.get("/test1", (c) => {
 });
 
 app.get("/test4", async (c) => {
-	const content = await getFileContent({
+	const fileContent = await getFileContent({
 		branch: "main",
 		owner: "UdayaKiran442",
 		repoName: "dummy-repository",
 		installationId: 131321944,
 		userId: "erf"
-	}, "src/index.ts");
-	console.log(content);
-	return c.json({ success: true, content });
+	}, "src/utls/utils.ts");
+	return c.json({ success: true, fileContent });
 });
 
 app.get("/neo4j-health-check", async (c) => {

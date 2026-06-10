@@ -1,12 +1,20 @@
 import pLimit from "p-limit";
-import { CheckIfRepoParsedError, CheckIfRepoParsedInDBError, GetAccessibleRepositoriesError, GetRepositoryBranchesError, TraverseDirectoryError } from "../exceptions/github.exceptions";
+import {
+	CheckIfRepoParsedError,
+	CheckIfRepoParsedInDBError,
+	GetAccessibleRepositoriesError,
+	GetRepositoryBranchesError,
+	ProcessFileContentError,
+	TraverseDirectoryError,
+} from "../exceptions/github.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
 import { checkIfRepoParsedInDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
 import type { IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
-import { upsertNodeToNeo4jService } from "../services/neo4j.service";
+import { queryNeo4jService } from "../services/neo4j.service";
+import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
 
 const limit = pLimit(10);
 
@@ -57,47 +65,98 @@ export async function checkIfRepoParsed(payload: ICheckIfRepoParsedSchema) {
 	}
 }
 
+// create a hash map to store file path and boolean value to check if the file is already parsed or not
+const fileMap: Record<string, boolean> = {};
+
 export async function parseRepository(payload: IParsedRepositorySchema) {
 	try {
 		// fetch all files in the repository
 		const allFiles = await traverseDirectory(payload);
-		// create a hash map to store file path and boolean value to check if the file is already parsed or not
-		const fileMap: Record<string, boolean> = {};
+		console.log(`Total files found: ${allFiles.length}`);
+		let index = 0;
 
 		// for each file
 		for (const filePath of allFiles) {
+			console.log(`Processing file ${++index}/${allFiles.length}: ${filePath}`);
 			if (fileMap[filePath]) {
 				continue;
 			}
-			// fetch file content
-			const fileContent = await getFileContent(
-				{
-					branch: payload.branch,
-					owner: payload.owner,
-					repoName: payload.repoName,
-					installationId: payload.installationId,
-					userId: payload.userId,
-				},
-				filePath,
-			);
-			if (!fileContent) {
-				// throw error
-				return;
-			}
-			// create a node in graph database for the file with label File and properties like name, path, type, content
-			const query = `MERGE (f:File{name: ${fileContent.path}}) SET f.name = ${fileContent.name}, f.path = ${fileContent.path}, f.type = ${fileContent.type}, f.content = ${fileContent.content}`;
-			await upsertNodeToNeo4jService(query);
-			fileMap[filePath] = true;
-
-			// extract imports and create edges between the nodes
-			
+			await processFileContent(payload, filePath);
 		}
 
 		return allFiles;
 	} catch (error) {
-		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError) {
+		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError || error instanceof QueryNeo4jServiceError || error instanceof ProcessFileContentError) {
 			throw error;
 		}
+	} finally {
+		// clear the file map after processing the repository
+		for (const key in fileMap) {
+			delete fileMap[key];
+		}
+	}
+}
+
+export async function processFileContent(payload: IParsedRepositorySchema, filePath: string) {
+	try {
+		console.log(`Processing content for file: ${filePath}`);
+		const fileContent = await getFileContent(payload, filePath);
+		console.log(`File content for ${filePath} fetched successfully: ${fileContent}`);
+		if (!fileContent) {
+			// throw error
+			return;
+		}
+		const query = `MERGE (f:File {path: $path}) SET f.path = $path, f.name = $name, f.type = $type, f.content = $content`;
+		await queryNeo4jService(query, {
+			path: fileContent.path,
+			name: fileContent.name,
+			type: fileContent.type,
+			content: fileContent.content,
+		});
+		fileMap[fileContent.path] = true;
+		console.log(`File content for ${filePath} processed and stored in Neo4j. Processing imports...`);
+		if (fileContent.imports.length > 0) {
+			console.log(`File ${filePath} has ${fileContent.imports.length} imports. Processing imports...`);
+			for (const imp of fileContent.imports) {
+				console.log(`Processing import: ${imp} for file: ${filePath}`);
+				if (fileMap[imp]) {
+					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) MERGE (f1)-[:IMPORTS]->(f2)`;
+					await queryNeo4jService(edgeQuery, {
+						file1Path: fileContent.path,
+						file2Path: imp,
+					});
+				} else {
+					const content = await getFileContent(payload, imp);
+					console.log(`File content for import ${imp} fetched successfully: ${content}`);
+					if (!content) {
+						continue;
+					}
+					const query = `MERGE (f:File{path: $path}) SET f.name = $name, f.path = $path, f.type = $type, f.content = $content`;
+					await queryNeo4jService(query, {
+						path: content.path,
+						name: content.name,
+						type: content.type,
+						content: content.content,
+					});
+					fileMap[content.path] = true;
+					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) MERGE (f1)-[:IMPORTS]->(f2)`;
+					await queryNeo4jService(edgeQuery, {
+						file1Path: fileContent.path,
+						file2Path: content.path,
+					});
+					if (content.imports.length > 0) {
+						console.log(`Processing imports for file: ${imp}`);
+						console.log(`File ${imp} has ${content.imports.length} imports. Processing imports...`);
+						await processFileContent(payload, imp);
+					}
+				}
+			}
+		}
+	} catch (error) {
+		if (error instanceof GetFileContentServiceError || error instanceof QueryNeo4jServiceError) {
+			throw error;
+		}
+		throw new ProcessFileContentError(`Failed to process file content for file ${filePath}`, { cause: (error as Error).message });
 	}
 }
 
@@ -111,17 +170,19 @@ export async function getFileContent(payload: IParsedRepositorySchema, filePath:
 			path: filePath,
 		});
 		const decodedContent = Buffer.from(fileContent.content, "base64").toString("utf-8");
-		const code = transpiler.transformSync(decodedContent);
+		const code = transpiler.transformSync(decodedContent, "ts");
 		const { imports } = transpiler.scan(code);
 		const fileImportRegex = /^(\.\/|\.\.\/|@\/)/;
-		const filteredImports = imports.filter((imp) => fileImportRegex.test(imp.path));
+		const filteredImports = imports.length > 0 ? imports.filter((imp) => fileImportRegex.test(imp.path)) : [];
 		const importPaths: string[] = [];
-		for (const imp of filteredImports) {
-			const normalisedPath = resolvePaths("src/index.ts", imp.path);
-			importPaths.push(normalisedPath);
+		if (filteredImports.length > 0) {
+			for (const imp of filteredImports) {
+				const normalisedPath = resolvePaths(filePath, imp.path);
+				importPaths.push(normalisedPath);
+			}
 		}
 		const match = fileContent.name.match(/\.([^.]+)$/);
-		const type = match ? `.${match[1]}` : "No extension found";
+		const type = match ? match[1] : "No extension found";
 		return { content: code, imports: importPaths, size: fileContent.size, name: fileContent.name, path: fileContent.path, type: type };
 	} catch (error) {
 		if (error instanceof GetFileContentServiceError) {
@@ -161,7 +222,12 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 					item.name === "package-lock.json" ||
 					item.name === "yarn.lock" ||
 					item.name === "pnpm-lock.yaml" ||
-					item.name === "bun.lock"
+					item.name === "bun.lock" ||
+					item.name.includes(".md") ||
+					item.name.includes(".json") ||
+					item.name.includes(".yml") ||
+					item.name.includes(".yaml") ||
+					item.name.includes(".env")
 				) {
 					return [];
 				}

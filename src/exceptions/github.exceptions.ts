@@ -48,3 +48,13 @@ export class TraverseDirectoryError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class ProcessFileContentError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "ProcessFileContentError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

@@ -9,11 +9,11 @@ export class ConnectToNeo4jError extends Error {
 }
 
 
-export class UpsertNodeToNeo4jError extends Error {
+export class QueryNeo4jServiceError extends Error {
 	public cause?: unknown;
 	constructor(message: string, options?: { cause?: unknown }) {
 		super(message);
-		this.name = "UpsertNodeToNeo4jError";
+		this.name = "QueryNeo4jServiceError";
 		if (options?.cause) this.cause = options.cause;
 		Error.captureStackTrace(this, this.constructor);
 	}
