@@ -78,9 +78,11 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 		// for each file
 		for (const filePath of allFiles) {
 			console.log(`Processing file ${++index}/${allFiles.length}: ${filePath}`);
+			// if the file is already parsed, skip it
 			if (fileMap[filePath]) {
 				continue;
 			}
+			// process the file content and store it in neo4j 
 			await processFileContent(payload, filePath);
 		}
 
@@ -100,37 +102,48 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 export async function processFileContent(payload: IParsedRepositorySchema, filePath: string) {
 	try {
 		console.log(`Processing content for file: ${filePath}`);
+		// get details of the file, code, imports, etc.
 		const fileContent = await getFileContent(payload, filePath);
 		console.log(`File content for ${filePath} fetched successfully: ${fileContent}`);
 		if (!fileContent) {
 			// throw error
 			return;
 		}
+
+		// query to create node for the file
 		const query = `MERGE (f:File {path: $path}) SET f.path = $path, f.name = $name, f.type = $type, f.content = $content`;
+		// execute the query to create node for the file in neo4j
 		await queryNeo4jService(query, {
 			path: fileContent.path,
 			name: fileContent.name,
 			type: fileContent.type,
 			content: fileContent.content,
 		});
+		// add file path to the map with value true to indicate that the file is parsed
 		fileMap[fileContent.path] = true;
 		console.log(`File content for ${filePath} processed and stored in Neo4j. Processing imports...`);
+		// check if file has imports, if yes, process each import
 		if (fileContent.imports.length > 0) {
 			console.log(`File ${filePath} has ${fileContent.imports.length} imports. Processing imports...`);
+			// for each import
 			for (const imp of fileContent.imports) {
 				console.log(`Processing import: ${imp} for file: ${filePath}`);
+				// check if the import is already parsed, if yes, create relationship in neo4j and skip to next import
 				if (fileMap[imp]) {
+					// create relationship in neo4j between the file and the imported file
 					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) MERGE (f1)-[:IMPORTS]->(f2)`;
 					await queryNeo4jService(edgeQuery, {
 						file1Path: fileContent.path,
 						file2Path: imp,
 					});
 				} else {
+					// if the import is not parsed
 					const content = await getFileContent(payload, imp);
 					console.log(`File content for import ${imp} fetched successfully: ${content}`);
 					if (!content) {
 						continue;
 					}
+					// create node for the imported file in neo4j
 					const query = `MERGE (f:File{path: $path}) SET f.name = $name, f.path = $path, f.type = $type, f.content = $content`;
 					await queryNeo4jService(query, {
 						path: content.path,
@@ -138,12 +151,15 @@ export async function processFileContent(payload: IParsedRepositorySchema, fileP
 						type: content.type,
 						content: content.content,
 					});
+					// add import file path to the map with value true to indicate that the file is parsed
 					fileMap[content.path] = true;
+					// create relationship in neo4j between the file and the imported file
 					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) MERGE (f1)-[:IMPORTS]->(f2)`;
 					await queryNeo4jService(edgeQuery, {
 						file1Path: fileContent.path,
 						file2Path: content.path,
 					});
+					// if the imported file has imports, process them as well recursively
 					if (content.imports.length > 0) {
 						console.log(`Processing imports for file: ${imp}`);
 						console.log(`File ${imp} has ${content.imports.length} imports. Processing imports...`);
