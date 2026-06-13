@@ -58,3 +58,13 @@ export class ProcessFileContentError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class AddParsedRepoToDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "AddParsedRepoToDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

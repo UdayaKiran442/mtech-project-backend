@@ -128,5 +128,5 @@ export const parsedRepos = pgTable("parsed_repos", {
 	userId: varchar("user_id").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (parsedRepos) => [
-	primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId] }),
+	primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch] }),
 ])

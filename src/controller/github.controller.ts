@@ -1,5 +1,6 @@
 import pLimit from "p-limit";
 import {
+	AddParsedRepoToDBError,
 	CheckIfRepoParsedError,
 	CheckIfRepoParsedInDBError,
 	GetAccessibleRepositoriesError,
@@ -8,7 +9,7 @@ import {
 	TraverseDirectoryError,
 } from "../exceptions/github.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
-import { checkIfRepoParsedInDB } from "../repository/github.repository";
+import { addParsedRepoToDB, checkIfRepoParsedInDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
 import type { IRepoFolder } from "../types/types";
@@ -82,13 +83,19 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			if (fileMap[filePath]) {
 				continue;
 			}
-			// process the file content and store it in neo4j 
+			// process the file content and store it in neo4j
 			await processFileContent(payload, filePath);
 		}
-
-		return allFiles;
+		// after processing all files, add the repository to the parsed_repos table in the database
+		return await addParsedRepoToDB(payload);
 	} catch (error) {
-		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError || error instanceof QueryNeo4jServiceError || error instanceof ProcessFileContentError) {
+		if (
+			error instanceof GetRepositoryContentServiceError ||
+			error instanceof TraverseDirectoryError ||
+			error instanceof QueryNeo4jServiceError ||
+			error instanceof ProcessFileContentError ||
+			error instanceof AddParsedRepoToDBError
+		) {
 			throw error;
 		}
 	} finally {
