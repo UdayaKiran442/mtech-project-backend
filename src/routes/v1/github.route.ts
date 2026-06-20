@@ -180,7 +180,7 @@ githubRoute.post("/check-repo-parsed", authMiddleware, async (c) => {
 });
 
 const ParseRepositorySchema = z.object({
-	installationId: z.number().positive(),
+	installationId: z.string(),
 	owner: z.string(),
 	repoName: z.string(),
 	branch: z.string(),
@@ -198,8 +198,8 @@ githubRoute.post("/parse-repository", authMiddleware, async (c) => {
 			...validation.data,
 			userId: c.get("user").userId,
 		};
-		const allFiles = await parseRepository(payload);
-		return c.json({ success: true, message: "Repository parsed successfully", allFiles });
+		const parsedRepo = await parseRepository(payload);
+		return c.json({ success: true, parsedRepo });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);

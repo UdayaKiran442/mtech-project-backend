@@ -189,7 +189,7 @@ export async function getFileContent(payload: IParsedRepositorySchema, filePath:
 			branch: payload.branch,
 			owner: payload.owner,
 			repo: payload.repoName,
-			installationId: payload.installationId,
+			installationId: Number(payload.installationId),
 			path: filePath,
 		});
 		const decodedContent = Buffer.from(fileContent.content, "base64").toString("utf-8");
@@ -222,7 +222,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 						branch: payload.branch,
 						owner: payload.owner,
 						repo: payload.repoName,
-						installationId: payload.installationId,
+						installationId: Number(payload.installationId),
 					},
 					path,
 				)
@@ -230,7 +230,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 					branch: payload.branch,
 					owner: payload.owner,
 					repo: payload.repoName,
-					installationId: payload.installationId,
+					installationId: Number(payload.installationId),
 				});
 
 		const files: string[] = [];
