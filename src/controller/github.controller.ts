@@ -5,11 +5,14 @@ import {
 	CheckIfRepoParsedInDBError,
 	GetAccessibleRepositoriesError,
 	GetRepositoryBranchesError,
+	InsertAllFilesError,
+	InsertRepoFileToDBError,
+	ParseRepositoryError,
 	ProcessFileContentError,
 	TraverseDirectoryError,
 } from "../exceptions/github.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
-import { addParsedRepoToDB, checkIfRepoParsedInDB } from "../repository/github.repository";
+import { addParsedRepoToDB, checkIfRepoParsedInDB, insertRepoFileToDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
 import type { IRepoFolder } from "../types/types";
@@ -86,23 +89,60 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			// process the file content and store it in neo4j
 			await processFileContent(payload, filePath);
 		}
-		// after processing all files, add the repository to the parsed_repos table in the database
-		return await addParsedRepoToDB(payload);
+		// after processing all files, add the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database
+		const [newParsedRepo, _] = await Promise.all([addParsedRepoToDB(payload), insertAllFiles(payload, allFiles)]);
+		return newParsedRepo;
 	} catch (error) {
 		if (
 			error instanceof GetRepositoryContentServiceError ||
 			error instanceof TraverseDirectoryError ||
 			error instanceof QueryNeo4jServiceError ||
 			error instanceof ProcessFileContentError ||
-			error instanceof AddParsedRepoToDBError
+			error instanceof AddParsedRepoToDBError ||
+			error instanceof InsertAllFilesError ||
+			error instanceof InsertRepoFileToDBError
 		) {
 			throw error;
 		}
+		throw new ParseRepositoryError("Failed to parse repository", { cause: (error as Error).message });
 	} finally {
 		// clear the file map after processing the repository
 		for (const key in fileMap) {
 			delete fileMap[key];
 		}
+	}
+}
+
+export async function insertAllFiles(payload: IParsedRepositorySchema, files: string[]) {
+	try {
+		const limit = pLimit(10); // max 10 concurrent DB inserts
+
+		const promises = files.map((file) =>
+			limit(async () => {
+				const fileNameMatch = file.match(/[^/\\]+$/);
+
+				const fileName = fileNameMatch?.[0];
+
+				if (!fileName) {
+					return;
+				}
+
+				await insertRepoFileToDB({
+					branch: payload.branch,
+					fileName,
+					filePath: file,
+					repoName: payload.repoName,
+					userId: payload.userId,
+				});
+			}),
+		);
+
+		await Promise.all(promises);
+	} catch (error) {
+		if (error instanceof InsertRepoFileToDBError) {
+			throw error;
+		}
+		throw new InsertAllFilesError("Failed to insert all files to DB", { cause: (error as Error).message });
 	}
 }
 
@@ -235,6 +275,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 
 		const files: string[] = [];
 
+		// return even file names along with the path of the file
 		const tasks = contents.map((item: IRepoFolder) =>
 			limit(async () => {
 				if (
@@ -252,7 +293,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 					item.name.includes(".yaml") ||
 					item.name.includes(".env")
 				) {
-					return [];
+					return;
 				}
 
 				if (item.type === "file") {
@@ -263,14 +304,14 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 					return traverseDirectory(payload, item.path);
 				}
 
-				return [];
+				return;
 			}),
 		);
 
 		const results = await Promise.all(tasks);
 
 		for (const result of results) {
-			files.push(...result);
+			result && files.push(...result);
 		}
 
 		return files;

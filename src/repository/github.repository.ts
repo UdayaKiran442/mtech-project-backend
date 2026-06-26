@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import type { ICheckIfRepoParsedSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import db from "./db";
-import { parsedRepos } from "./schema";
-import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError } from "../exceptions/github.exceptions";
+import { parsedRepoFiles, parsedRepos } from "./schema";
+import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError, InsertRepoFileToDBError } from "../exceptions/github.exceptions";
 
 export async function checkIfRepoParsedInDB(payload: ICheckIfRepoParsedSchema) {
 	try {
@@ -28,5 +28,22 @@ export async function addParsedRepoToDB(payload: IParsedRepositorySchema){
 		return insertPayload;
 	} catch (error) {
 		throw new AddParsedRepoToDBError("Failed to add parsed repository to DB", { cause: (error as Error).message });
+	}
+}
+
+export async function insertRepoFileToDB(payload: { repoName: string; branch: string; userId: string; filePath: string; fileName: string }) {
+	try {
+		const insertPayload = {
+			repoName: payload.repoName,
+			branch: payload.branch,
+			userId: payload.userId,
+			filePath: payload.filePath,
+			fileName: payload.fileName,
+			createdAt: new Date(),
+		};
+		await db.insert(parsedRepoFiles).values(insertPayload);
+		return insertPayload;
+	} catch (error) {
+		throw new InsertRepoFileToDBError("Failed to insert repository file to DB", { cause: (error as Error).message });	
 	}
 }

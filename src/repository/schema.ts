@@ -122,11 +122,29 @@ export const messages = pgTable(
 	}),
 );
 
-export const parsedRepos = pgTable("parsed_repos", {
-	repoName: varchar("repo_name").primaryKey(),
-	branch: varchar("branch").notNull(),
-	userId: varchar("user_id").notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (parsedRepos) => [
-	primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch] }),
-])
+export const parsedRepos = pgTable(
+	"parsed_repos",
+	{
+		repoName: varchar("repo_name").primaryKey(),
+		branch: varchar("branch").notNull(),
+		userId: varchar("user_id").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(parsedRepos) => [primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch] })],
+);
+
+export const parsedRepoFiles = pgTable(
+	"parsed_repo_files",
+	{
+		repoName: varchar("repo_name").notNull(),
+		branch: varchar("branch").notNull(),
+		userId: varchar("user_id").notNull(),
+		filePath: varchar("file_path").notNull(),
+		fileName: varchar("file_name").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(parsedRepoFiles) => ({
+		parsedRepoFilesPrimaryKey: primaryKey({ name: "parsed_repo_files_pkey", columns: [parsedRepoFiles.repoName, parsedRepoFiles.userId, parsedRepoFiles.branch, parsedRepoFiles.filePath] }),
+		fileNameIdx: index("file_name_idx").on(parsedRepoFiles.fileName),
+	}),
+);

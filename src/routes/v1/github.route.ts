@@ -14,6 +14,9 @@ import {
 	CheckIfRepoParsedInDBError,
 	GetAccessibleRepositoriesError,
 	GetRepositoryBranchesError,
+	InsertAllFilesError,
+	InsertRepoFileToDBError,
+	ParseRepositoryError,
 	ProcessFileContentError,
 	TraverseDirectoryError,
 } from "../../exceptions/github.exceptions";
@@ -210,7 +213,10 @@ githubRoute.post("/parse-repository", authMiddleware, async (c) => {
 			error instanceof GetRepositoryContentServiceError ||
 			error instanceof TraverseDirectoryError ||
 			error instanceof QueryNeo4jServiceError ||
-			error instanceof ProcessFileContentError
+			error instanceof ProcessFileContentError ||
+			error instanceof InsertRepoFileToDBError ||
+			error instanceof InsertAllFilesError ||
+			error instanceof ParseRepositoryError
 		) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
