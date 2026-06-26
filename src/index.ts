@@ -8,7 +8,7 @@ import engine from "./config/websocket.config";
 import type { WebSocketData } from "@socket.io/bun-engine";
 import { getRepositoryContentService } from "./services/octokit.service";
 import connectToNeo4j from "./config/neo4j.config";
-import { getFileContent, insertAllFiles, traverseDirectory } from "./controller/github.controller";
+import { getFileContent, insertAllFiles } from "./controller/github.controller";
 import { queryNeo4jService } from "./services/neo4j.service";
 
 const app = new Hono();
