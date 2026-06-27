@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
-import { AddKnowledgeBaseInDBError, DeleteKnowledgeBaseFileFromDBError, GetFileDetailsFromDBError } from "../exceptions/knowledgeBase.exceptions";
+import { and, eq, ilike } from "drizzle-orm";
+import { AddKnowledgeBaseInDBError, DeleteKnowledgeBaseFileFromDBError, GetFileDetailsFromDBError, SearchKnowledgeBaseFilesInDBError } from "../exceptions/knowledgeBase.exceptions";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { knowledgeBase } from "./schema";
+import type { ISearchFilesSchema } from "../routes/v1/search.route";
 
 // Function to add a knowledge file to the database
 export async function addKnowledgeBaseInDB(payload: { workspaceId: string; uploadedBy: string; fileUrl: string; key: string }) {
@@ -35,5 +36,16 @@ export async function deleteKnowledgeBaseFileFromDB(fileId: string) {
 		await db.delete(knowledgeBase).where(eq(knowledgeBase.fileId, fileId));
 	} catch (error) {
 		throw new DeleteKnowledgeBaseFileFromDBError("Failed to delete knowledge base file from DB", { cause: (error as Error).message });
+	}
+}
+
+export async function searchKnowledgeBaseFilesInDB(payload: { workspaceId: string; searchString: string }) {
+	try {
+		return await db
+			.select()
+			.from(knowledgeBase)
+			.where(and(eq(knowledgeBase.workspaceId, payload.workspaceId), ilike(knowledgeBase.key, `%${payload.searchString}%`)));
+	} catch (error) {
+		throw new SearchKnowledgeBaseFilesInDBError("Failed to search knowledge base files in DB", { cause: (error as Error).message });
 	}
 }

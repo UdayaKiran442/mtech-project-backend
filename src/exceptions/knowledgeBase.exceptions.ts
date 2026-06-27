@@ -27,3 +27,12 @@ export class DeleteKnowledgeBaseFileFromDBError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+export class SearchKnowledgeBaseFilesInDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "SearchKnowledgeBaseFilesInDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

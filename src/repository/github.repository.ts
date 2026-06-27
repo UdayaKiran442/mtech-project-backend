@@ -1,8 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, ilike } from "drizzle-orm";
 import type { ICheckIfRepoParsedSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
 import db from "./db";
 import { parsedRepoFiles, parsedRepos } from "./schema";
-import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError, InsertRepoFileToDBError } from "../exceptions/github.exceptions";
+import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError, InsertRepoFileToDBError, SearchRepoFileInDBError } from "../exceptions/github.exceptions";
+import type { ISearchFilesSchema } from "../routes/v1/search.route";
 
 export async function checkIfRepoParsedInDB(payload: ICheckIfRepoParsedSchema) {
 	try {
@@ -16,14 +17,14 @@ export async function checkIfRepoParsedInDB(payload: ICheckIfRepoParsedSchema) {
 	}
 }
 
-export async function addParsedRepoToDB(payload: IParsedRepositorySchema){
+export async function addParsedRepoToDB(payload: IParsedRepositorySchema) {
 	try {
 		const insertPayload = {
 			repoName: payload.repoName,
 			branch: payload.branch,
 			userId: payload.userId,
 			createdAt: new Date(),
-		}
+		};
 		await db.insert(parsedRepos).values(insertPayload);
 		return insertPayload;
 	} catch (error) {
@@ -44,6 +45,24 @@ export async function insertRepoFileToDB(payload: { repoName: string; branch: st
 		await db.insert(parsedRepoFiles).values(insertPayload);
 		return insertPayload;
 	} catch (error) {
-		throw new InsertRepoFileToDBError("Failed to insert repository file to DB", { cause: (error as Error).message });	
+		throw new InsertRepoFileToDBError("Failed to insert repository file to DB", { cause: (error as Error).message });
+	}
+}
+
+export async function searchRepoFileInDB(payload: ISearchFilesSchema) {
+	try {
+		return await db
+			.select()
+			.from(parsedRepoFiles)
+			.where(
+				and(
+					ilike(parsedRepoFiles.fileName, `%${payload.searchString}%`),
+					eq(parsedRepoFiles.userId, payload.userId),
+					eq(parsedRepoFiles.repoName, payload.repoName),
+					eq(parsedRepoFiles.branch, payload.branch),
+				),
+			);
+	} catch (error) {
+		throw new SearchRepoFileInDBError("Failed to search repository file in DB", { cause: (error as Error).message });
 	}
 }

@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { Octokit } from "@octokit/core";
+import { searchRepoFileInDB } from "../../repository/github.repository";
+import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
 
 const testRouter = new Hono();
 
@@ -34,5 +36,24 @@ testRouter.get("/test2", async (c) => {
     console.log("Files in the repository:", files);
     return c.json({ message: "This is another test route", contents: result.data });
 });
+
+testRouter.get("/test3", async (c) => {
+	const result = await searchRepoFileInDB({
+		branch: "main",
+		repoName: "dummy-repository",
+		searchString: "utils",
+		userId: "user_sVKE1p866Lg7EPBlyPMAG",
+		workspaceId: "workspace_1",
+	})
+	return c.json({ message: "This is a test route for searching files in DB", result: result });
+})
+
+testRouter.get("/test4", async (c) => {
+	const result = await searchKnowledgeBaseFilesInDB({
+		searchString: "Sys",
+		workspaceId: "ws_JyzeFS0u8rAyQsbzbV0I5"
+	})
+	return c.json({ message: "This is a test route for searching files in DB", result: result });
+})
 
 export default testRouter;

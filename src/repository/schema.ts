@@ -84,6 +84,7 @@ export const knowledgeBase = pgTable(
 	},
 	(knowledgeBase) => ({
 		workspaceIdIdx: index("workspace_id_idx_knowledge_base").on(knowledgeBase.workspaceId),
+		keyIdx: index("key_idx_knowledge_base").on(knowledgeBase.key),
 	}),
 );
 
