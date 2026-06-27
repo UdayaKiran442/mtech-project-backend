@@ -3,7 +3,6 @@ import { AddKnowledgeBaseInDBError, DeleteKnowledgeBaseFileFromDBError, GetFileD
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
 import { knowledgeBase } from "./schema";
-import type { ISearchFilesSchema } from "../routes/v1/search.route";
 
 // Function to add a knowledge file to the database
 export async function addKnowledgeBaseInDB(payload: { workspaceId: string; uploadedBy: string; fileUrl: string; key: string }) {
