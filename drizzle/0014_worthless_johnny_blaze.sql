@@ -1,0 +1,1 @@
+CREATE INDEX "key_idx_knowledge_base" ON "knowledge_base" USING btree ("key");
