@@ -8,7 +8,7 @@ import { SearchKnowledgeBaseFilesInDBError } from "../../exceptions/knowledgeBas
 const searchRoute = new Hono();
 
 const SearchFilesSchema = z.object({
-	searchString: z.string().min(1, "Search string cannot be empty"),
+	searchString: z.string().min(3, "Search string cannot be empty"),
 	workspaceId: z.string(),
 	repoName: z.string(),
 	branch: z.string(),
