@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { Octokit } from "@octokit/core";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
+import connectToNeo4j from "../../config/neo4j.config";
 
 const testRouter = new Hono();
 
@@ -55,5 +56,13 @@ testRouter.get("/test4", async (c) => {
 	})
 	return c.json({ message: "This is a test route for searching files in DB", result: result });
 })
+
+testRouter.get("/test5", async (c) => {
+	const query = `MATCH (f:File {path: "src/index.ts"})-[:IMPORTS*]-(other:File)
+RETURN other;`;
+	const driver = await connectToNeo4j();
+	const result = await driver.executeQuery(query);
+	return c.json({ success: true, query, result });
+});
 
 export default testRouter;
