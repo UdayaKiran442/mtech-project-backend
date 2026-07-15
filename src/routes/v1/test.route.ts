@@ -1,8 +1,8 @@
-import { Hono } from "hono";
 import { Octokit } from "@octokit/core";
+import { Hono } from "hono";
+import connectToNeo4j from "../../config/neo4j.config";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
-import connectToNeo4j from "../../config/neo4j.config";
 
 const testRouter = new Hono();
 
@@ -33,9 +33,9 @@ testRouter.get("/test2", async (c) => {
 			"X-GitHub-Api-Version": "2026-03-10",
 		},
 	});
-    const files = result.data
-    console.log("Files in the repository:", files);
-    return c.json({ message: "This is another test route", contents: result.data });
+	const files = result.data;
+	console.log("Files in the repository:", files);
+	return c.json({ message: "This is another test route", contents: result.data });
 });
 
 testRouter.get("/test3", async (c) => {
@@ -45,17 +45,17 @@ testRouter.get("/test3", async (c) => {
 		searchString: "utils",
 		userId: "user_sVKE1p866Lg7EPBlyPMAG",
 		workspaceId: "workspace_1",
-	})
+	});
 	return c.json({ message: "This is a test route for searching files in DB", result: result });
-})
+});
 
 testRouter.get("/test4", async (c) => {
 	const result = await searchKnowledgeBaseFilesInDB({
 		searchString: "Sys",
-		workspaceId: "ws_JyzeFS0u8rAyQsbzbV0I5"
-	})
+		workspaceId: "ws_JyzeFS0u8rAyQsbzbV0I5",
+	});
 	return c.json({ message: "This is a test route for searching files in DB", result: result });
-})
+});
 
 testRouter.get("/test5", async (c) => {
 	const query = `MATCH (f:File {path: "src/index.ts"})-[:IMPORTS*]-(other:File)
