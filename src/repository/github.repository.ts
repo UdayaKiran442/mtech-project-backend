@@ -1,16 +1,16 @@
 import { and, eq, ilike } from "drizzle-orm";
+import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError, InsertRepoFileToDBError, SearchRepoFileInDBError } from "../exceptions/github.exceptions";
 import type { ICheckIfRepoParsedSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
+import type { ISearchFilesSchema } from "../routes/v1/search.route";
 import db from "./db";
 import { parsedRepoFiles, parsedRepos } from "./schema";
-import { AddParsedRepoToDBError, CheckIfRepoParsedInDBError, InsertRepoFileToDBError, SearchRepoFileInDBError } from "../exceptions/github.exceptions";
-import type { ISearchFilesSchema } from "../routes/v1/search.route";
 
 export async function checkIfRepoParsedInDB(payload: ICheckIfRepoParsedSchema) {
 	try {
 		const repo = await db
 			.select()
 			.from(parsedRepos)
-			.where(and(eq(parsedRepos.repoName, payload.repoName), eq(parsedRepos.branch, payload.branch), eq(parsedRepos.userId, payload.userId)));
+			.where(and(eq(parsedRepos.repoName, payload.repoName), eq(parsedRepos.branch, payload.branch), eq(parsedRepos.userId, payload.userId), eq(parsedRepos.workspaceId, payload.workspaceId)));
 		return repo.length > 0;
 	} catch (error) {
 		throw new CheckIfRepoParsedInDBError("Failed to check if repository is parsed in DB", { cause: (error as Error).message });
@@ -23,6 +23,7 @@ export async function addParsedRepoToDB(payload: IParsedRepositorySchema) {
 			repoName: payload.repoName,
 			branch: payload.branch,
 			userId: payload.userId,
+			workspaceId: payload.workspaceId,
 			createdAt: new Date(),
 		};
 		await db.insert(parsedRepos).values(insertPayload);

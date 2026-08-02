@@ -1,0 +1,1 @@
+ALTER TABLE "parsed_repos" ADD COLUMN "workspace_id" varchar;

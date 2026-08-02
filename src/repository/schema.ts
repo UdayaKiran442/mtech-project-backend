@@ -129,9 +129,10 @@ export const parsedRepos = pgTable(
 		repoName: varchar("repo_name").primaryKey(),
 		branch: varchar("branch").notNull(),
 		userId: varchar("user_id").notNull(),
+		workspaceId: varchar("workspace_id").notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
-	(parsedRepos) => [primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch] })],
+	(parsedRepos) => [primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch, parsedRepos.workspaceId] })],
 );
 
 export const parsedRepoFiles = pgTable(

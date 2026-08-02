@@ -1,0 +1,1 @@
+ALTER TABLE "parsed_repos" ALTER COLUMN "workspace_id" SET NOT NULL;

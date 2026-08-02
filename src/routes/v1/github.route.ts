@@ -154,6 +154,7 @@ githubRoute.post("/repository-branches", authMiddleware, async (c) => {
 const CheckIfRepoParsedSchema = z.object({
 	repoName: z.string(),
 	branch: z.string(),
+	workspaceId: z.string(),
 });
 
 export type ICheckIfRepoParsedSchema = z.infer<typeof CheckIfRepoParsedSchema> & { userId: string };
@@ -187,6 +188,7 @@ const ParseRepositorySchema = z.object({
 	owner: z.string(),
 	repoName: z.string(),
 	branch: z.string(),
+	workspaceId: z.string(),
 });
 
 export type IParsedRepositorySchema = z.infer<typeof ParseRepositorySchema> & { userId: string };
