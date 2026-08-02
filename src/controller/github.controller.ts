@@ -158,13 +158,17 @@ export async function processFileContent(payload: IParsedRepositorySchema, fileP
 		}
 
 		// query to create node for the file
-		const query = `MERGE (f:File {path: $path}) SET f.path = $path, f.name = $name, f.type = $type, f.content = $content`;
+		const query = `MERGE (f:File {path: $path}) SET f.path = $path, f.name = $name, f.type = $type, f.content = $content, f.repoName = $repoName, f.branch = $branch, f.userId = $userId, f.workspaceId = $workspaceId`;
 		// execute the query to create node for the file in neo4j
 		await queryNeo4jService(query, {
 			path: fileContent.path,
 			name: fileContent.name,
 			type: fileContent.type,
 			content: fileContent.content,
+			repoName: payload.repoName,
+			branch: payload.branch,
+			userId: payload.userId,
+			workspaceId: payload.workspaceId,
 		});
 		// add file path to the map with value true to indicate that the file is parsed
 		fileMap[fileContent.path] = true;
@@ -191,20 +195,28 @@ export async function processFileContent(payload: IParsedRepositorySchema, fileP
 						continue;
 					}
 					// create node for the imported file in neo4j
-					const query = `MERGE (f:File{path: $path}) SET f.name = $name, f.path = $path, f.type = $type, f.content = $content`;
+					const query = `MERGE (f:File{path: $path}) SET f.name = $name, f.path = $path, f.type = $type, f.content = $content, f.repoName = $repoName, f.branch = $branch, f.userId = $userId, f.workspaceId = $workspaceId`;
 					await queryNeo4jService(query, {
 						path: content.path,
 						name: content.name,
 						type: content.type,
 						content: content.content,
+						repoName: payload.repoName,
+						branch: payload.branch,
+						userId: payload.userId,
+						workspaceId: payload.workspaceId,
 					});
 					// add import file path to the map with value true to indicate that the file is parsed
 					fileMap[content.path] = true;
-					// create relationship in neo4j between the file and the imported file
-					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) MERGE (f1)-[:IMPORTS]->(f2)`;
+					// create relationship in neo4j between the file and the imported file for nodes which match repository, branch, workspaceId and userId
+					const edgeQuery = `MATCH (f1:File {path: $file1Path}), (f2:File {path: $file2Path}) WHERE f1.repoName = $repoName AND f1.branch = $branch AND f1.userId = $userId AND f1.workspaceId = $workspaceId AND f2.repoName = $repoName AND f2.branch = $branch AND f2.userId = $userId AND f2.workspaceId = $workspaceId MERGE (f1)-[:IMPORTS]->(f2)`;
 					await queryNeo4jService(edgeQuery, {
 						file1Path: fileContent.path,
 						file2Path: content.path,
+						repoName: payload.repoName,
+						branch: payload.branch,
+						userId: payload.userId,
+						workspaceId: payload.workspaceId,
 					});
 					// if the imported file has imports, process them as well recursively
 					if (content.imports.length > 0) {
