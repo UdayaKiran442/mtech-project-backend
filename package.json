@@ -23,6 +23,7 @@
     "neo4j-driver": "^6.1.0",
     "octokit": "^5.0.5",
     "pdf-parse": "^1",
+    "sarvamai": "^1.1.7",
     "socket.io": "^4.8.3",
     "zod": "^4.1.12"
   },
