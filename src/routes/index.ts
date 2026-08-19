@@ -21,6 +21,6 @@ v1Router.route("/chat", chatRoute);
 v1Router.route("/github", githubRoute);
 v1Router.route("/test", testRouter);
 v1Router.route("/search", searchRoute);
-v1Router.route("/query", codebotRoute);
+v1Router.route("/codebot", codebotRoute);
 
 export default v1Router;

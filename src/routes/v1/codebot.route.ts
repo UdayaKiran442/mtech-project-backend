@@ -25,10 +25,10 @@ codebotRoute.post("/query", authMiddleware, async (c) => {
 		}
 		const payload = {
 			...validation.data,
-			userId: c.get("user").userId,
+			userId: 'c.get("user").userId',
 		};
-		await queryCodebot(payload);
-		return c.json({ success: true }, 200);
+		const result = await queryCodebot(payload);
+		return c.json({ success: true, result }, 200);
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);

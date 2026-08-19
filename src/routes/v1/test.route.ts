@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import connectToNeo4j from "../../config/neo4j.config";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
+import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
 
 const testRouter = new Hono();
 
@@ -63,6 +64,11 @@ RETURN other;`;
 	const driver = await connectToNeo4j();
 	const result = await driver.executeQuery(query);
 	return c.json({ success: true, query, result });
+});
+
+testRouter.get("/test6", async (c) => {
+	const result = await fetchFileNodeDetailsService("src/index.ts");
+	return c.json({ success: true, result });
 });
 
 export default testRouter;
