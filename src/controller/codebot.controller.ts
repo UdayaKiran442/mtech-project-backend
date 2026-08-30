@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/complexity/useLiteralKeys: <""> */
-import { QueryCodebotError } from "../exceptions/codebot.exceptions";
-import type { IQueryCodebotSchema } from "../routes/v1/codebot.route";
+import { CreateCodebotChatError, CreateCodebotChatInDBError, QueryCodebotError } from "../exceptions/codebot.exceptions";
+import { createCodebotChatInDB } from "../repository/codebot.repository";
+import type { ICreateCodebotChatSchema, IQueryCodebotSchema } from "../routes/v1/codebot.route";
 import { fetchFileImportsService, fetchFileNodeDetailsService } from "../services/neo4j.service";
 import { generateResponseFromSarvamService } from "../services/sarvam.service";
 
@@ -18,7 +19,7 @@ export async function queryCodebot(payload: IQueryCodebotSchema) {
 				// fetch repo context here
                 skippedPaths.add(file.path); // Mark the current file as processed
 				const result = await fetchFileImportsService(file.path);  
-                // TODO: Fetch current file path node from Neo4j and push context to codeRecords array 
+                // Fetch current file path node from Neo4j and push context to codeRecords array 
                 const currentFileNode = await fetchFileNodeDetailsService(file.path);
                 if (!currentFileNode || currentFileNode.records.length === 0) {
                     throw new QueryCodebotError(`No data found for file: ${file.path}`);
@@ -58,11 +59,24 @@ export async function queryCodebot(payload: IQueryCodebotSchema) {
             model: "sarvam-105b",
             temperature: 0.7,
         })
-		return { codeRecords, result, prompt };
+		// store the result in database
+		return result;
 	} catch (error) {
         if (error instanceof QueryCodebotError) {
             throw error;
         }
 		throw new QueryCodebotError("Failed to query codebot", { cause: (error as Error).message });
+	}
+}
+
+
+export async function createCodebotChat(payload: ICreateCodebotChatSchema) {
+	try {
+		return await createCodebotChatInDB(payload);
+	} catch (error) {
+		if (error instanceof CreateCodebotChatInDBError) {
+			throw error;
+		}
+		throw new CreateCodebotChatError("Failed to create codebot chat", { cause: (error as Error).message });
 	}
 }

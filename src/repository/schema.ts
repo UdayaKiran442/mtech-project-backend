@@ -150,3 +150,20 @@ export const parsedRepoFiles = pgTable(
 		fileNameIdx: index("file_name_idx").on(parsedRepoFiles.fileName),
 	}),
 );
+
+export const codebotChat = pgTable("codebot_chat", {
+	codebotChatId: varchar("codebot_chat_id").primaryKey(),
+	workspaceId: varchar("workspace_id").notNull(),
+	userId: varchar("user_id").notNull(),
+	codebotChatName: varchar("codebot_chat_name"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+export const codebotMessages = pgTable("codebot_messages", {
+	codebotMessageId: varchar("codebot_message_id").primaryKey(),
+	codebotChatId: varchar("codebot_chat_id").notNull(),
+	prompt: varchar("prompt").notNull(),
+	response: varchar("response").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+})
