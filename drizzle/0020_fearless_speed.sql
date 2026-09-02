@@ -1,0 +1,1 @@
+DROP INDEX "user_id_idx_codebot_chat";

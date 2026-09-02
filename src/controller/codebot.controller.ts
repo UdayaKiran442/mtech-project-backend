@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/complexity/useLiteralKeys: <""> */
-import { CreateCodebotChatError, CreateCodebotChatInDBError, QueryCodebotError } from "../exceptions/codebot.exceptions";
-import { createCodebotChatInDB } from "../repository/codebot.repository";
-import type { ICreateCodebotChatSchema, IQueryCodebotSchema } from "../routes/v1/codebot.route";
+import { CreateCodebotChatError, CreateCodebotChatInDBError, FetchUserCodebotChatsError, FetchUserCodebotChatsFromDBError, QueryCodebotError } from "../exceptions/codebot.exceptions";
+import { createCodebotChatInDB, fetchUserCodebotChatsFromDB } from "../repository/codebot.repository";
+import type { ICreateCodebotChatSchema, IFetchCodebotChatsSchema, IQueryCodebotSchema } from "../routes/v1/codebot.route";
 import { fetchFileImportsService, fetchFileNodeDetailsService } from "../services/neo4j.service";
 import { generateResponseFromSarvamService } from "../services/sarvam.service";
 
@@ -78,5 +78,16 @@ export async function createCodebotChat(payload: ICreateCodebotChatSchema) {
 			throw error;
 		}
 		throw new CreateCodebotChatError("Failed to create codebot chat", { cause: (error as Error).message });
+	}
+}
+
+export async function fetchUserCodebotChats(payload: IFetchCodebotChatsSchema) {
+	try {
+		return await fetchUserCodebotChatsFromDB(payload);
+	} catch (error) {
+		if (error instanceof FetchUserCodebotChatsFromDBError) {
+			throw error;
+		}
+		throw new FetchUserCodebotChatsError("Failed to fetch user codebot chats", { cause: (error as Error).message });
 	}
 }

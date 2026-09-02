@@ -27,3 +27,23 @@ export class CreateCodebotChatInDBError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export class FetchUserCodebotChatsFromDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchUserCodebotChatsFromDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+export class FetchUserCodebotChatsError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchUserCodebotChatsError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

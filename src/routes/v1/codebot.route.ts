@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import z from "zod";
-import { createCodebotChat, queryCodebot } from "../../controller/codebot.controller";
-import { CreateCodebotChatError, CreateCodebotChatInDBError } from "../../exceptions/codebot.exceptions";
+import { createCodebotChat, fetchUserCodebotChats, queryCodebot } from "../../controller/codebot.controller";
+import { CreateCodebotChatError, CreateCodebotChatInDBError, FetchUserCodebotChatsError, FetchUserCodebotChatsFromDBError } from "../../exceptions/codebot.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 
 const codebotRoute = new Hono();
@@ -66,7 +66,37 @@ codebotRoute.post("/new-chat", authMiddleware, async (c) => {
 			return c.json({ success: false, error: error.cause, message: error.message }, 400);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
+});
 
+// fetch all codebot chats for a user in the workspace
+const FetchCodebotChatsSchema = z.object({
+	workspaceId: z.string(),
+});
+
+export type IFetchCodebotChatsSchema = z.infer<typeof FetchCodebotChatsSchema> & { userId: string };
+
+codebotRoute.post("/fetch-chats", authMiddleware, async (c) => {
+	try {
+		const validation = FetchCodebotChatsSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const response = await fetchUserCodebotChats(payload);
+		return c.json({ success: true, response }, 200);
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 422);
+		}
+		if (error instanceof FetchUserCodebotChatsFromDBError || error instanceof FetchUserCodebotChatsError) {
+			return c.json({ success: false, error: error.cause, message: error.message }, 400);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
 	}
 });
 

@@ -151,14 +151,20 @@ export const parsedRepoFiles = pgTable(
 	}),
 );
 
-export const codebotChat = pgTable("codebot_chat", {
-	codebotChatId: varchar("codebot_chat_id").primaryKey(),
-	workspaceId: varchar("workspace_id").notNull(),
-	userId: varchar("user_id").notNull(),
-	codebotChatName: varchar("codebot_chat_name"),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+export const codebotChat = pgTable(
+	"codebot_chat",
+	{
+		codebotChatId: varchar("codebot_chat_id").primaryKey(),
+		workspaceId: varchar("workspace_id").notNull(),
+		userId: varchar("user_id").notNull(),
+		codebotChatName: varchar("codebot_chat_name"),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(codebotChat) => ({
+		workspaceUserIdIdx: index("workspace_id_user_id_idx_codebot_chat").on(codebotChat.workspaceId, codebotChat.userId),
+	}),
+);
 
 export const codebotMessages = pgTable("codebot_messages", {
 	codebotMessageId: varchar("codebot_message_id").primaryKey(),
@@ -166,4 +172,4 @@ export const codebotMessages = pgTable("codebot_messages", {
 	prompt: varchar("prompt").notNull(),
 	response: varchar("response").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
