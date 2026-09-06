@@ -95,8 +95,8 @@ codebotRoute.post("/fetch-chats", authMiddleware, async (c) => {
 			...validation.data,
 			userId: c.get("user").userId,
 		};
-		const response = await fetchUserCodebotChats(payload);
-		return c.json({ success: true, response }, 200);
+		const codebotChats = await fetchUserCodebotChats(payload);
+		return c.json({ success: true, codebotChats }, 200);
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
