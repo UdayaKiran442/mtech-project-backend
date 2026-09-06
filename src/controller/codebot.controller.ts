@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/complexity/useLiteralKeys: <""> */
 import {
+	AddChatbotMessageToDBError,
 	CreateCodebotChatError,
 	CreateCodebotChatInDBError,
 	FetchCodebotChatByIdFromDBError,
@@ -10,7 +11,9 @@ import {
 	UpdateCodebotChatNameInDBError,
 } from "../exceptions/codebot.exceptions";
 import { NotFoundError } from "../exceptions/common.exceptions";
-import { createCodebotChatInDB, fetchCodebotChatByIdFromDB, fetchUserCodebotChatsFromDB, updateCodebotChatNameInDB } from "../repository/codebot.repository";
+import { FetchFileImportsServiceError, FetchFileNodeDetailsServiceError } from "../exceptions/neo4j.exceptions";
+import { GenerateResponseFromSarvamServiceError } from "../exceptions/sarvam.exceptions";
+import { addChatbotMessageToDB, createCodebotChatInDB, fetchCodebotChatByIdFromDB, fetchUserCodebotChatsFromDB, updateCodebotChatNameInDB } from "../repository/codebot.repository";
 import type { ICreateCodebotChatSchema, IFetchCodebotChatsSchema, IQueryCodebotSchema, IUpdateCodebotChatNameSchema } from "../routes/v1/codebot.route";
 import { fetchFileImportsService, fetchFileNodeDetailsService } from "../services/neo4j.service";
 import { generateResponseFromSarvamService } from "../services/sarvam.service";
@@ -69,10 +72,25 @@ export async function queryCodebot(payload: IQueryCodebotSchema) {
 			model: "sarvam-105b",
 			temperature: 0.7,
 		});
+		if (!result) {
+			throw new QueryCodebotError("No response received from Sarvam service");
+		}
 		// store the result in database
-		return result;
+		const newChatbotMessage = await addChatbotMessageToDB({
+			codebotChatId: payload.codebotChatId,
+			prompt: payload.query,
+			response: result,
+		});
+
+		return newChatbotMessage;
 	} catch (error) {
-		if (error instanceof QueryCodebotError) {
+		if (
+			error instanceof QueryCodebotError ||
+			error instanceof AddChatbotMessageToDBError ||
+			error instanceof GenerateResponseFromSarvamServiceError ||
+			error instanceof FetchFileImportsServiceError ||
+			error instanceof FetchFileNodeDetailsServiceError
+		) {
 			throw error;
 		}
 		throw new QueryCodebotError("Failed to query codebot", { cause: (error as Error).message });

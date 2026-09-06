@@ -2,15 +2,19 @@ import { Hono } from "hono";
 import z from "zod";
 import { createCodebotChat, fetchUserCodebotChats, queryCodebot, updateCodebotChatName } from "../../controller/codebot.controller";
 import {
+	AddChatbotMessageToDBError,
 	CreateCodebotChatError,
 	CreateCodebotChatInDBError,
 	FetchCodebotChatByIdFromDBError,
 	FetchUserCodebotChatsError,
 	FetchUserCodebotChatsFromDBError,
+	QueryCodebotError,
 	UpdateCodebotChatNameError,
 	UpdateCodebotChatNameInDBError,
 } from "../../exceptions/codebot.exceptions";
 import { NotFoundError } from "../../exceptions/common.exceptions";
+import { FetchFileImportsServiceError, FetchFileNodeDetailsServiceError } from "../../exceptions/neo4j.exceptions";
+import { GenerateResponseFromSarvamServiceError } from "../../exceptions/sarvam.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 
 const codebotRoute = new Hono();
@@ -36,7 +40,7 @@ codebotRoute.post("/query", authMiddleware, async (c) => {
 		}
 		const payload = {
 			...validation.data,
-			userId: 'c.get("user").userId',
+			userId: c.get("user").userId,
 		};
 		const result = await queryCodebot(payload);
 		return c.json({ success: true, result }, 200);
@@ -44,6 +48,16 @@ codebotRoute.post("/query", authMiddleware, async (c) => {
 		if (error instanceof z.ZodError) {
 			const errMessage = JSON.parse(error.message);
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 422);
+		}
+		if (
+			error instanceof QueryCodebotError ||
+			error instanceof AddChatbotMessageToDBError ||
+			error instanceof GenerateResponseFromSarvamServiceError ||
+			error instanceof FetchFileImportsServiceError ||
+			error instanceof FetchFileNodeDetailsServiceError ||
+			error instanceof QueryCodebotError
+		) {
+			return c.json({ success: false, error: error.cause, message: error.message }, 400);
 		}
 	}
 });

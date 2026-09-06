@@ -79,3 +79,14 @@ export class UpdateCodebotChatNameError extends Error {
 	}
 }
 
+
+export class AddChatbotMessageToDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "UpdateCodebotChatNameError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+

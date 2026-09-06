@@ -1,5 +1,5 @@
 import connectToNeo4j from "../config/neo4j.config";
-import { ConnectToNeo4jError, QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
+import { ConnectToNeo4jError, FetchFileImportsServiceError, FetchFileNodeDetailsServiceError, QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
 
 // biome-ignore lint/suspicious/noExplicitAny: <due to dynamic nature of query parameters, using any type for params>
 export async function queryNeo4jService(query: string, params?: Record<string, any>) {
@@ -22,12 +22,11 @@ export async function fetchFileImportsService(path: string) {
 	try {
 		const query = `MATCH (f:File {path: "${path}"})-[:IMPORTS*]-(other:File)
 		RETURN other;`;
-		console.log("Executing Neo4j query:", query);
 		const driver = await connectToNeo4j();
 		const result = await driver.executeQuery(query);
 		return result;
 	} catch (error) {
-		console.log("Error fetching data from Neo4j:", error);
+		throw new FetchFileImportsServiceError("Failed to fetch file imports from Neo4j", { cause: (error as Error).message });
 	}
 }
 
@@ -38,6 +37,6 @@ export async function fetchFileNodeDetailsService(path: string) {
 		const result = await driver.executeQuery(query);
 		return result;
 	} catch (error) {
-		console.log("Error fetching file node details from Neo4j:", error);
+		throw new FetchFileNodeDetailsServiceError("Failed to fetch file node details from Neo4j", { cause: (error as Error).message });
 	}
 }

@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { CreateCodebotChatInDBError, FetchCodebotChatByIdFromDBError, FetchUserCodebotChatsFromDBError, UpdateCodebotChatNameInDBError } from "../exceptions/codebot.exceptions";
+import { AddChatbotMessageToDBError, CreateCodebotChatInDBError, FetchCodebotChatByIdFromDBError, FetchUserCodebotChatsFromDBError, UpdateCodebotChatNameInDBError } from "../exceptions/codebot.exceptions";
 import type { ICreateCodebotChatSchema, IFetchCodebotChatsSchema, IUpdateCodebotChatNameSchema } from "../routes/v1/codebot.route";
 import { generateNanoId } from "../utils/nano.utils";
 import db from "./db";
-import { codebotChat } from "./schema";
+import { codebotChat, codebotMessages } from "./schema";
 
 export async function createCodebotChatInDB(payload: ICreateCodebotChatSchema) {
 	try {
@@ -18,6 +18,22 @@ export async function createCodebotChatInDB(payload: ICreateCodebotChatSchema) {
 		return insertPayload;
 	} catch (error) {
 		throw new CreateCodebotChatInDBError("Failed to create codebot chat in the database", { cause: (error as Error).message });
+	}
+}
+
+export async function addChatbotMessageToDB(payload: { codebotChatId: string; prompt: string; response: string }){
+	try {
+		const insertPayload = {
+			codebotMessageId: `codebot_message_${generateNanoId()}`,
+			codebotChatId: payload.codebotChatId,
+			prompt: payload.prompt,
+			response: payload.response,
+			createdAt: new Date(),
+		};
+		await db.insert(codebotMessages).values(insertPayload);
+		return insertPayload;
+	} catch (error) {
+		throw new AddChatbotMessageToDBError("Failed to add chatbot message to the database", { cause: (error as Error).message });
 	}
 }
 

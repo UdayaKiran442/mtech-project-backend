@@ -18,3 +18,22 @@ export class QueryNeo4jServiceError extends Error {
 		Error.captureStackTrace(this, this.constructor);
 	}
 }
+export class FetchFileImportsServiceError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchFileImportsServiceError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+export class FetchFileNodeDetailsServiceError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchFileNodeDetailsServiceError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
