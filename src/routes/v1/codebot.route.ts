@@ -1,18 +1,20 @@
 import { Hono } from "hono";
 import z from "zod";
-import { createCodebotChat, fetchUserCodebotChats, queryCodebot, updateCodebotChatName } from "../../controller/codebot.controller";
+import { createCodebotChat, fetchCodebotChatMessagesById, fetchUserCodebotChats, queryCodebot, updateCodebotChatName } from "../../controller/codebot.controller";
 import {
 	AddChatbotMessageToDBError,
 	CreateCodebotChatError,
 	CreateCodebotChatInDBError,
 	FetchCodebotChatByIdFromDBError,
+	FetchCodebotChatMessagesByIdError,
+	FetchCodebotChatMessagesByIdFromDBError,
 	FetchUserCodebotChatsError,
 	FetchUserCodebotChatsFromDBError,
 	QueryCodebotError,
 	UpdateCodebotChatNameError,
 	UpdateCodebotChatNameInDBError,
 } from "../../exceptions/codebot.exceptions";
-import { NotFoundError } from "../../exceptions/common.exceptions";
+import { ForbiddenError, NotFoundError } from "../../exceptions/common.exceptions";
 import { FetchFileImportsServiceError, FetchFileNodeDetailsServiceError } from "../../exceptions/neo4j.exceptions";
 import { GenerateResponseFromSarvamServiceError } from "../../exceptions/sarvam.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
@@ -153,6 +155,45 @@ codebotRoute.post("/update-chatname", authMiddleware, async (c) => {
 		}
 		if (error instanceof NotFoundError) {
 			return c.json({ success: false, error: error.cause, message: error.message }, 404);
+		}
+		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
+	}
+});
+
+// Fetch codebot chat messages by codebotChatId
+
+const FetchCodebotMessagesSchema = z.object({
+	codebotChatId: z.string(),
+	workspaceId: z.string(),
+});
+
+export type IFetchCodebotChatMessagesSchema = z.infer<typeof FetchCodebotMessagesSchema> & { userId: string };
+
+codebotRoute.post("/chat-messages", authMiddleware, async (c) => {
+	try {
+		const validation = FetchCodebotMessagesSchema.safeParse(await c.req.json());
+		if (!validation.success) {
+			throw validation.error;
+		}
+		const payload = {
+			...validation.data,
+			userId: c.get("user").userId,
+		};
+		const codebotChatMessages = await fetchCodebotChatMessagesById(payload);
+		return c.json({ success: true, codebotChatMessages }, 200);
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			const errMessage = JSON.parse(error.message);
+			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 422);
+		}
+		if (error instanceof NotFoundError) {
+			return c.json({ success: false, error: error.cause, message: error.message }, 404);
+		}
+		if (error instanceof ForbiddenError) {
+			return c.json({ success: false, error: error.cause, message: error.message }, 403);
+		}
+		if (error instanceof FetchCodebotChatByIdFromDBError || error instanceof FetchCodebotChatMessagesByIdFromDBError || error instanceof FetchCodebotChatMessagesByIdError) {
+			return c.json({ success: false, error: error.cause, message: error.message }, 400);
 		}
 		return c.json({ success: false, error: "InternalServerError", message: "Something went wrong" }, 500);
 	}

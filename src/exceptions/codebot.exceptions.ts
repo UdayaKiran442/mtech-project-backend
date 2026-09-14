@@ -90,3 +90,24 @@ export class AddChatbotMessageToDBError extends Error {
 	}
 }
 
+export class FetchCodebotChatMessagesByIdFromDBError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchCodebotChatMessagesByIdFromDBError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+
+
+export class FetchCodebotChatMessagesByIdError extends Error {
+	public cause?: unknown;
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message);
+		this.name = "FetchCodebotChatMessagesByIdError";
+		if (options?.cause) this.cause = options.cause;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+

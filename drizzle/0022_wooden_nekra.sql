@@ -1,0 +1,1 @@
+CREATE INDEX "codebot_chat_id_idx_codebot_messages" ON "codebot_messages" USING btree ("codebot_chat_id");

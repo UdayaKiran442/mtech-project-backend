@@ -172,4 +172,6 @@ export const codebotMessages = pgTable("codebot_messages", {
 	prompt: varchar("prompt").notNull(),
 	response: varchar("response").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (codebotMessages) => ({
+	codebotChatIdIdx: index("codebot_chat_id_idx_codebot_messages").on(codebotMessages.codebotChatId),
+}));

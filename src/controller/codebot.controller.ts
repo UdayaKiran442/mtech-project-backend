@@ -4,17 +4,26 @@ import {
 	CreateCodebotChatError,
 	CreateCodebotChatInDBError,
 	FetchCodebotChatByIdFromDBError,
+	FetchCodebotChatMessagesByIdError,
+	FetchCodebotChatMessagesByIdFromDBError,
 	FetchUserCodebotChatsError,
 	FetchUserCodebotChatsFromDBError,
 	QueryCodebotError,
 	UpdateCodebotChatNameError,
 	UpdateCodebotChatNameInDBError,
 } from "../exceptions/codebot.exceptions";
-import { NotFoundError } from "../exceptions/common.exceptions";
+import { ForbiddenError, NotFoundError } from "../exceptions/common.exceptions";
 import { FetchFileImportsServiceError, FetchFileNodeDetailsServiceError } from "../exceptions/neo4j.exceptions";
 import { GenerateResponseFromSarvamServiceError } from "../exceptions/sarvam.exceptions";
-import { addChatbotMessageToDB, createCodebotChatInDB, fetchCodebotChatByIdFromDB, fetchUserCodebotChatsFromDB, updateCodebotChatNameInDB } from "../repository/codebot.repository";
-import type { ICreateCodebotChatSchema, IFetchCodebotChatsSchema, IQueryCodebotSchema, IUpdateCodebotChatNameSchema } from "../routes/v1/codebot.route";
+import {
+	addChatbotMessageToDB,
+	createCodebotChatInDB,
+	fetchCodebotChatByIdFromDB,
+	fetchCodebotChatMessagesByIdFromDB,
+	fetchUserCodebotChatsFromDB,
+	updateCodebotChatNameInDB,
+} from "../repository/codebot.repository";
+import type { ICreateCodebotChatSchema, IFetchCodebotChatMessagesSchema, IFetchCodebotChatsSchema, IQueryCodebotSchema, IUpdateCodebotChatNameSchema } from "../routes/v1/codebot.route";
 import { fetchFileImportsService, fetchFileNodeDetailsService } from "../services/neo4j.service";
 import { generateResponseFromSarvamService } from "../services/sarvam.service";
 
@@ -131,5 +140,24 @@ export async function updateCodebotChatName(payload: IUpdateCodebotChatNameSchem
 			throw error;
 		}
 		throw new UpdateCodebotChatNameError("Failed to update codebot chat name", { cause: (error as Error).message });
+	}
+}
+
+export async function fetchCodebotChatMessagesById(payload: IFetchCodebotChatMessagesSchema) {
+	try {
+		// check if logged in user is the owner of the codebot chat
+		const codebotChat = await fetchCodebotChatByIdFromDB(payload.codebotChatId);
+		if (codebotChat.length === 0) {
+			throw new NotFoundError(`Codebot chat with id ${payload.codebotChatId} not found`);
+		}
+		if (codebotChat[0].userId !== payload.userId && codebotChat[0].workspaceId !== payload.workspaceId) {
+			throw new ForbiddenError(`User with id ${payload.userId} is not authorized to access codebot chat with id ${payload.codebotChatId}`);
+		}
+		return await fetchCodebotChatMessagesByIdFromDB(payload.codebotChatId);
+	} catch (error) {
+		if (error instanceof FetchCodebotChatByIdFromDBError || error instanceof NotFoundError || error instanceof ForbiddenError || error instanceof FetchCodebotChatMessagesByIdFromDBError) {
+			throw error;
+		}
+		throw new FetchCodebotChatMessagesByIdError("Failed to fetch codebot chat messages by id", { cause: (error as Error).message });
 	}
 }

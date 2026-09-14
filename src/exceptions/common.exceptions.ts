@@ -7,3 +7,13 @@ export class NotFoundError extends Error {
         Error.captureStackTrace(this, this.constructor);
     }
 }
+
+export class ForbiddenError extends Error {
+    public cause?: unknown;
+    constructor(message: string, options?: { cause?: unknown }) {
+        super(message);
+        this.name = "ForbiddenError";
+        if (options?.cause) this.cause = options.cause;
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
