@@ -14,6 +14,7 @@ export type SubModule = {
 	exported: boolean;
 	startLine: number;
 	endLine: number;
+	content?: string | undefined;
 };
 
 export type ModuleRelation = {
@@ -23,6 +24,31 @@ export type ModuleRelation = {
 	fromName: string;
 	toName: string;
 	line?: number;
+};
+
+export type KnowledgeGraphNode = {
+	id: string;
+	type: SubModule["kind"] | "external";
+	properties: Omit<SubModule, "id" | "kind" | "content"> & {
+		content?: string;
+	};
+};
+
+export type KnowledgeGraphEdge = {
+	type: ModuleRelation["type"];
+	source: string;
+	target: string;
+	properties: {
+		fromName: string;
+		toName: string;
+		line?: number;
+	};
+};
+
+export type KnowledgeGraph = {
+	entryPath: string;
+	nodes: KnowledgeGraphNode[];
+	edges: KnowledgeGraphEdge[];
 };
 
 export type ImportedBinding = {
@@ -186,6 +212,7 @@ function collectExportedNames(root: Node) {
 
 export function extractSubModules(filePath: string, root: Node): SubModule[] {
 	const exportedNames = collectExportedNames(root);
+
 	const modules: SubModule[] = [
 		{
 			id: moduleId(filePath),
@@ -325,6 +352,47 @@ function importCandidates(sourceFilePath: string, importSpecifier: string) {
 	const normalised = resolvePaths(sourceFilePath, importSpecifier);
 	const withoutExt = normalised.replace(HAS_EXTENSION_REGEX, "");
 	return [normalised, `${withoutExt}.ts`, `${withoutExt}.tsx`, `${withoutExt}.js`, path.join(withoutExt, "index.ts")].filter((value, index, list) => list.indexOf(value) === index);
+}
+
+import { Buffer } from "node:buffer";
+
+type FileLineRangePayload = {
+	installationId: number;
+	owner: string;
+	repo: string;
+	branch: string;
+	path: string;
+	startLine: number;
+	endLine: number;
+};
+
+export async function getFileLineRangeService(payload: FileLineRangePayload): Promise<string> {
+	const { startLine, endLine, ...filePayload } = payload;
+
+	if (!Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 1 || endLine < startLine) {
+		throw new RangeError("Expected integer line numbers with 1 <= startLine <= endLine.");
+	}
+
+	const file = await getFileContentService(filePayload);
+
+	// Validate the response at runtime rather than relying only on a cast.
+	if (!file || Array.isArray(file) || file.type !== "file" || file.encoding !== "base64" || typeof file.content !== "string") {
+		throw new Error("Expected a file response containing Base64-encoded content.");
+	}
+
+	const content = Buffer.from(file.content, "base64").toString("utf8");
+	const lines = content.split(/\r\n|\n|\r/);
+
+	// A terminating newline does not represent an additional source-code line.
+	if (lines[lines.length - 1] === "") {
+		lines.pop();
+	}
+
+	if (endLine > lines.length) {
+		throw new RangeError(`Requested lines ${startLine}-${endLine}, but the file has ${lines.length} lines.`);
+	}
+
+	return lines.slice(startLine - 1, endLine).join("\n");
 }
 
 async function decodeFile(repo: RepoContext, filePath: string) {
@@ -478,5 +546,67 @@ export async function buildModuleGraph(repo: RepoContext & { entryPath: string }
 		files: [...files.keys()],
 		modules,
 		relations,
+	};
+}
+
+export async function toKnowledgeGraph(
+	graph: {
+		entryPath: string;
+		modules: SubModule[];
+		relations: ModuleRelation[];
+	},
+	repo: RepoContext,
+): Promise<KnowledgeGraph> {
+	const nodes: KnowledgeGraphNode[] = await Promise.all(
+		graph.modules
+			.filter((module) => module.kind !== "file")
+			.map(async ({ id, kind, content, file, ...properties }) => ({
+				id,
+				type: kind,
+				properties: {
+					...properties,
+					file,
+					content:
+						content ??
+						(await getFileLineRangeService({
+							...repo,
+							path: file,
+							startLine: properties.startLine,
+							endLine: properties.endLine,
+						})),
+				},
+			})),
+	);
+	const nodeIds = new Set(nodes.map((node) => node.id));
+
+	for (const relation of graph.relations) {
+		if (relation.type === "contains") continue;
+		for (const id of [relation.from, relation.to]) {
+			if (nodeIds.has(id) || !id.startsWith("external:")) continue;
+			const [source, imported] = id.slice("external:".length).split("#");
+			nodes.push({
+				id,
+				type: "external",
+				properties: {
+					file: source,
+					name: imported ?? source,
+					exported: true,
+					startLine: 0,
+					endLine: 0,
+				},
+			});
+			nodeIds.add(id);
+		}
+	}
+
+	return {
+		entryPath: graph.entryPath,
+		nodes,
+		edges: graph.relations.map(({ type, from, to, fromName, toName, line }) => ({
+			type,
+			source: from,
+			target: to,
+			properties: { fromName, toName, ...(line === undefined ? {} : { line }) },
+		})),
 	};
 }

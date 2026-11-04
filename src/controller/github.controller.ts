@@ -19,6 +19,7 @@ import type { IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
 import { queryNeo4jService } from "../services/neo4j.service";
 import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
+import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
 
 const limit = pLimit(10);
 
@@ -91,6 +92,25 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 		}
 		// after processing all files, add the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database
 		const [newParsedRepo, _] = await Promise.all([addParsedRepoToDB(payload), insertAllFiles(payload, allFiles)]);
+		// after processing all files, clear the file map to free up memory
+		for (const key in fileMap) {
+			delete fileMap[key];
+		}
+		// process sub modules
+		const graph = await buildModuleGraph({
+			branch: payload.branch,
+			owner: payload.owner,
+			repo: payload.repoName,
+			installationId: Number(payload.installationId),
+			entryPath: "src/index.ts",
+		})
+		const subModules = await toKnowledgeGraph(graph, {
+			branch: payload.branch,
+			owner: payload.owner,
+			repo: payload.repoName,
+			installationId: Number(payload.installationId),
+		})
+		// insert sub modules into the database in a new table called parsed_repo_sub_modules
 		return newParsedRepo;
 	} catch (error) {
 		if (

@@ -1,5 +1,5 @@
+import fs from "node:fs";
 import { App } from "octokit";
-import fs from "fs";
 
 export default function octokitInstance(installationId: number) {
 	const private_key = fs.readFileSync("/Users/uday/Downloads/mammalio.pem", "utf-8");
