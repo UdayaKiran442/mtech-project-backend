@@ -1,3 +1,5 @@
+import type { CLASS_DECLARATION, FUNCTION_CALL, FUNCTION_DECLARATION } from "../constants/subModuleType.constants";
+
 export type AuthContext = {
 	Variables: {
 		user: {
@@ -70,3 +72,24 @@ export type IRepoFileContent = {
         self: string;
     };
 }
+
+export type IRepoContext = {
+  installationId: number;
+  owner: string;
+  repo: string;
+  branch: string;
+};
+
+export type ISubModule = {
+    id: string;
+    name: string;
+    type: ISubModuleType;
+    code: string;
+    filePath: string;
+    startIndex: number;
+    endIndex: number;
+    startLine: number;
+    endLine: number;
+}
+
+export type ISubModuleType = typeof FUNCTION_DECLARATION | typeof CLASS_DECLARATION | typeof FUNCTION_CALL;

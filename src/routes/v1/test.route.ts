@@ -4,6 +4,7 @@ import connectToNeo4j from "../../config/neo4j.config";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
 import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
+import { buildModuleGraphV2 } from "../../utils/treesitterV2.utils";
 
 const testRouter = new Hono();
 
@@ -69,6 +70,19 @@ RETURN other;`;
 testRouter.get("/test6", async (c) => {
 	const result = await fetchFileNodeDetailsService("src/index.ts");
 	return c.json({ success: true, result });
+});
+
+testRouter.get("/test7", async (c) => {
+	const result = await buildModuleGraphV2({
+		repoContext: {
+			branch: "main",
+			owner: "UdayaKiran442",
+			repo: "dummy-repository",
+			installationId: 131321944,
+		},
+		entryPath: "src/index.ts",
+	});
+	return c.json({ result });
 });
 
 export default testRouter;
