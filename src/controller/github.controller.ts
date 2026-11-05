@@ -11,15 +11,16 @@ import {
 	ProcessFileContentError,
 	TraverseDirectoryError,
 } from "../exceptions/github.exceptions";
+import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
 import { addParsedRepoToDB, checkIfRepoParsedInDB, insertRepoFileToDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
-import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
-import type { IRepoFolder } from "../types/types";
-import { resolvePaths } from "../utils/path.utils";
 import { queryNeo4jService } from "../services/neo4j.service";
-import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
+import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
+import type { IRepoContext, IRepoFolder } from "../types/types";
+import { resolvePaths } from "../utils/path.utils";
 import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
+import { buildModuleGraphV2 } from "../utils/treesitterV2.utils";
 
 const limit = pLimit(10);
 
@@ -103,13 +104,13 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			repo: payload.repoName,
 			installationId: Number(payload.installationId),
 			entryPath: "src/index.ts",
-		})
+		});
 		const subModules = await toKnowledgeGraph(graph, {
 			branch: payload.branch,
 			owner: payload.owner,
 			repo: payload.repoName,
 			installationId: Number(payload.installationId),
-		})
+		});
 		// insert sub modules into the database in a new table called parsed_repo_sub_modules
 		return newParsedRepo;
 	} catch (error) {
@@ -353,4 +354,13 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 		}
 		throw new TraverseDirectoryError("Failed to traverse directory", { cause: (error as Error).message });
 	}
+}
+
+export async function subModuleGraph(payload: { repoContext: IRepoContext }) {
+	const subModules = await buildModuleGraphV2({
+		repoContext: payload.repoContext,
+		userId: "erf",
+		workspaceId: "workspace_1",
+	});
+	return subModules;
 }

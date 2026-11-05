@@ -1,11 +1,11 @@
 import { Octokit } from "@octokit/core";
 import { Hono } from "hono";
 import connectToNeo4j from "../../config/neo4j.config";
+import { traverseDirectory } from "../../controller/github.controller";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
 import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
 import { buildModuleGraphV2 } from "../../utils/treesitterV2.utils";
-import { traverseDirectory } from "../../controller/github.controller";
 
 const testRouter = new Hono();
 
@@ -81,7 +81,8 @@ testRouter.get("/test7", async (c) => {
 			repo: "dummy-repository",
 			installationId: 131321944,
 		},
-		entryPath: "src/index.ts",
+		userId: "erf",
+		workspaceId: "workspace_1",
 	});
 	return c.json({ result });
 });
