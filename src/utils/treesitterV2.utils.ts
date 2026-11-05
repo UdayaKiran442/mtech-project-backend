@@ -1,3 +1,4 @@
+import { FUNCTION_DECLARATION } from "../constants/subModuleType.constants";
 import type { IRepoContext, ISubModule } from "../types/types";
 import { resolvePaths } from "./path.utils";
 import { fetchFileNode, fetchFunctionDeclarationsFromNode, fetchImportPathsFromNode } from "./treesitterNodes.utils";
@@ -26,7 +27,7 @@ export async function buildModuleGraphV2(payload: { repoContext: IRepoContext; e
 				repoContext: payload.repoContext,
 				filePath: resolvedPath,
 			});
-			const functionDeclarations = node.descendantsOfType("function_declaration");
+			const functionDeclarations = node.descendantsOfType(FUNCTION_DECLARATION);
 			const codeBlocks = await fetchFunctionDeclarationsFromNode({
 				decodedString,
 				functionDeclarations,
