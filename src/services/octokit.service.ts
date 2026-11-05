@@ -8,7 +8,12 @@ import {
 } from "../exceptions/octokit.exceptions";
 import type { IRepoFileContent, IRepoFolder } from "../types/types";
 
-export async function getAccessibleRepositories(installationId: number) {
+/**
+ * Fetches accessible repositories for a given installation ID.
+ * @param installationId - The ID of the installation.
+ * @returns A promise resolving to the list of accessible repositories.
+ */
+export async function getAccessibleRepositoriesService(installationId: number) {
 	const octokit = octokitInstance(installationId);
 	try {
 		const response = (await octokit).request("GET /installation/repositories", {
@@ -25,6 +30,13 @@ export async function getAccessibleRepositories(installationId: number) {
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @returns branches
+ * @description
+ * - Octokit service to fetch all branches from repository
+ */
 export async function getRepositoryBranchesService(payload: { installationId: number; owner: string; repo: string }) {
 	const octokit = octokitInstance(payload.installationId);
 	try {
@@ -44,6 +56,13 @@ export async function getRepositoryBranchesService(payload: { installationId: nu
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @returns branch details
+ * @description
+ * - Octokit service to fetch branch details from repository
+ */
 export async function getRepositoryBranchDetailsService(payload: { installationId: number; owner: string; repo: string; branch: string }) {
 	const octokit = octokitInstance(payload.installationId);
 	try {
@@ -64,6 +83,16 @@ export async function getRepositoryBranchDetailsService(payload: { installationI
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @param path 
+ * @returns Repository details
+ * @description
+ * - Octokit service to get repository directory details from the service
+ * - If path is provided, fetches the content of that specific folder in the repository
+ * - If path is not provided, fetches the root directory content of the repository
+ */
 export async function getRepositoryContentService(payload: { installationId: number; owner: string; repo: string; branch: string }, path?: string): Promise<IRepoFolder[]> {
 	const octokit = octokitInstance(payload.installationId);
 	try {
@@ -97,6 +126,14 @@ export async function getRepositoryContentService(payload: { installationId: num
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @returns file content
+ * @description
+ * - Octokit service to fetch file content from repository
+ * - Fetches the content of a specific file in the repository based on the provided path
+ */
 export async function getFileContentService(payload: { installationId: number; owner: string; repo: string; branch: string; path: string }): Promise<IRepoFileContent> {
 	try {
 		const octokit = octokitInstance(payload.installationId);
