@@ -356,7 +356,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 	}
 }
 
-export async function subModuleGraph(payload: { repoContext: IRepoContext }) {
+export async function fetchSubModulesFromRepo(payload: { repoContext: IRepoContext }) {
 	const subModules = await buildModuleGraphV2({
 		repoContext: payload.repoContext,
 		userId: "erf",
