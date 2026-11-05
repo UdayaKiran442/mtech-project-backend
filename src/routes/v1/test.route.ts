@@ -5,6 +5,7 @@ import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
 import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
 import { buildModuleGraphV2 } from "../../utils/treesitterV2.utils";
+import { traverseDirectory } from "../../controller/github.controller";
 
 const testRouter = new Hono();
 
@@ -81,6 +82,18 @@ testRouter.get("/test7", async (c) => {
 			installationId: 131321944,
 		},
 		entryPath: "src/index.ts",
+	});
+	return c.json({ result });
+});
+
+testRouter.get("/test8", async (c) => {
+	const result = await traverseDirectory({
+		branch: "main",
+		owner: "UdayaKiran442",
+		repoName: "dummy-repository",
+		installationId: "131321944",
+		userId: "erf",
+		workspaceId: "workspace_1",
 	});
 	return c.json({ result });
 });
