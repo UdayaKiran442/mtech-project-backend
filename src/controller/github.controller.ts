@@ -20,7 +20,7 @@ import { getAccessibleRepositoriesService, getFileContentService, getRepositoryB
 import type { IRepoContext, IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
 import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
-import { buildModuleGraphV2 } from "../utils/treesitterV2.utils";
+import { buildSubModules } from "../utils/treesitterV2.utils";
 
 const limit = pLimit(10);
 
@@ -435,7 +435,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 }
 
 export async function fetchSubModulesFromRepo(payload: { repoContext: IRepoContext }) {
-	const subModules = await buildModuleGraphV2({
+	const subModules = await buildSubModules({
 		repoContext: payload.repoContext,
 		userId: "erf",
 		workspaceId: "workspace_1",

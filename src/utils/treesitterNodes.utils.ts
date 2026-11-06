@@ -19,6 +19,24 @@ export function fetchImportPathsFromNode(payload: { importNodes: Node[] }): stri
 		.filter((importPath) => importPath?.startsWith(".") || importPath?.startsWith("@")) as string[];
 }
 
+export function fetchImportsFromNode(payload: { importNodes: Node[] }): string[] {
+	const imports = [];
+	for (const node of payload.importNodes) {
+		console.log(node.text);
+		const importPathNode = node.descendantsOfType("string")[0];
+		if (importPathNode) {
+			let importPath = importPathNode.text;
+			// remove quotes from the import path
+			importPath = importPath.replace(/['"]/g, "");
+			const isProjectPath = importPath.startsWith("./") || importPath.startsWith("../") || importPath.startsWith("@");
+			if (isProjectPath) {
+				imports.push(node.text);
+			}
+		}
+	}
+	return imports;
+}
+
 export async function fetchFileNode(payload: { repoContext: IRepoContext; filePath: string }) {
 	try {
 		const fileContent = await getFileContentService({
@@ -70,5 +88,33 @@ export async function fetchFunctionDeclarationsFromNode(payload: { functionDecla
 		});
 	} catch (error) {
 		throw new Error(`Error fetching function declarations from node: ${(error as Error).message}`);
+	}
+}
+
+export async function fetchFunctionCallsFromNode(payload: { functionCalls: Node[]; decodedString: string; filePath: string }) {
+	try {
+		return payload.functionCalls.map((callNode) => {
+			const startIndex = callNode.startIndex;
+			const endIndex = callNode.endIndex;
+			const funcName = callNode.childForFieldName("function")?.text || "anonymous";
+			const startLine = callNode.startPosition.row + 1;
+			const endLine = callNode.endPosition.row + 1;
+			console.log(`Function call ${funcName} found from line ${startLine} to line ${endLine}`);
+			console.log(`Function call name: ${funcName}, Start index: ${startIndex}, End index: ${endIndex}`);
+			const code = payload.decodedString.slice(startIndex, endIndex);
+			return {
+				id: `${payload.filePath}#${funcName}`,
+				name: funcName,
+				code,
+				startIndex,
+				endIndex,
+				startLine,
+				endLine,
+				type: "call_expression" as ISubModule["type"],
+				filePath: payload.filePath,
+			};
+		});
+	} catch (error) {
+		throw new Error(`Error fetching function calls from node: ${(error as Error).message}`);
 	}
 }

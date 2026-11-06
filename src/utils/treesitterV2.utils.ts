@@ -1,11 +1,19 @@
-import { FUNCTION_DECLARATION } from "../constants/subModuleType.constants";
+import { CALL_EXPRESSION, FUNCTION_DECLARATION, IMPORT_STATEMENT } from "../constants/subModuleType.constants";
 import { traverseDirectory } from "../controller/github.controller";
 import type { IRepoContext, ISubModule } from "../types/types";
-import { fetchFileNode, fetchFunctionDeclarationsFromNode } from "./treesitterNodes.utils";
+import { resolvePaths } from "./path.utils";
+import { fetchFileNode, fetchFunctionCallsFromNode, fetchFunctionDeclarationsFromNode, fetchImportPathsFromNode, fetchImportsFromNode } from "./treesitterNodes.utils";
 
-export async function buildModuleGraphV2(payload: { repoContext: IRepoContext; userId: string; workspaceId: string }) {
+type ResolvedImport = {
+	functionName: string;
+	declaredFilePath: string;
+	calledFilePath: string;
+};
+
+export async function buildSubModules(payload: { repoContext: IRepoContext; userId: string; workspaceId: string }) {
 	try {
 		const subModules: ISubModule[] = [];
+		const resolvedImportPaths: ResolvedImport[] = [];
 		const allFiles = await traverseDirectory({
 			branch: payload.repoContext.branch,
 			owner: payload.repoContext.owner,
@@ -15,16 +23,16 @@ export async function buildModuleGraphV2(payload: { repoContext: IRepoContext; u
 			workspaceId: payload.workspaceId,
 		});
 		for (const filePath of allFiles) {
-            console.log(`Processing file: ${filePath}`);
+			console.log(`Processing file: ${filePath}`);
 			const { node, decodedString } = await fetchFileNode({
 				repoContext: payload.repoContext,
 				filePath,
 			});
 
 			const functionDeclarations = node.descendantsOfType(FUNCTION_DECLARATION);
-            if (functionDeclarations.length === 0) {
-                continue; // Skip files without function declarations
-            }
+			if (functionDeclarations.length === 0) {
+				continue; // Skip files without function declarations
+			}
 			const codeBlocks = await fetchFunctionDeclarationsFromNode({
 				decodedString,
 				functionDeclarations,
@@ -34,18 +42,57 @@ export async function buildModuleGraphV2(payload: { repoContext: IRepoContext; u
 			subModules.push(...codeBlocks);
 		}
 
-		return subModules;
+		for (const filePath of allFiles) {
+			const { node, decodedString } = await fetchFileNode({
+				repoContext: payload.repoContext,
+				filePath,
+			});
+			const functionCalls = node.descendantsOfType(CALL_EXPRESSION);
+			if (functionCalls.length === 0) {
+				continue;
+			}
+			const result = await fetchFunctionCallsFromNode({
+				decodedString,
+				filePath,
+				functionCalls,
+			});
+			const importNodes = node.descendantsOfType(IMPORT_STATEMENT);
+			const imports = fetchImportsFromNode({
+				importNodes,
+			});
+			const importPaths = fetchImportPathsFromNode({
+				importNodes,
+			});
+
+			importPaths.forEach((importPath, i) => {
+				// "import { add, sub as minus } from './utils'" -> "add, sub as minus"
+				const namedImports = imports[i].match(/\{([^}]*)\}/)?.[1] ?? "";
+				// "import foo from './x'" -> default import
+				const defaultImport = imports[i].match(/^import\s+([A-Za-z_$][\w$]*)/)?.[1];
+
+				const functionNames = [
+					...(defaultImport ? [defaultImport] : []),
+					...namedImports
+						.split(",")
+						.map((name) => name.trim())
+						.filter(Boolean)
+						// for "sub as minus", the local name used in calls is "minus"
+						// biome-ignore lint/style/noNonNullAssertion: <>
+						.map((name) => name.split(/\s+as\s+/).pop()!),
+				];
+
+				const resolvedPath = resolvePaths("src/index.ts", importPath);
+
+				for (const functionName of functionNames) {
+					resolvedImportPaths.push({ functionName, declaredFilePath: resolvedPath, calledFilePath: filePath });
+				}
+			});
+			const finalResult = result.filter((r) => resolvedImportPaths.find((impPath) => impPath.functionName === r.name));
+			subModules.push(...finalResult);
+		}
+
+		return { subModules, resolvedImportPaths };
 	} catch (error) {
 		throw new Error(`Failed to build module graph: ${(error as Error).message}`);
 	}
 }
-
-// // check for import statements in the node
-// const importNodes = node.descendantsOfType("import_statement");
-// // extract and normalise the import paths from import node
-// const importPaths = fetchImportPathsFromNode({ importNodes });
-// const resolvedImportPaths: string[] = [];
-// for (const importPath of importPaths) {
-// 	// resolve the import path to an absolute path
-// 	resolvedImportPaths.push(resolvePaths(filePath, importPath));
-// }
