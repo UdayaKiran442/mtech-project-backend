@@ -38,6 +38,7 @@ export async function buildSubModules(payload: { repoContext: IRepoContext; user
 				functionDeclarations,
 				resolvedPath: filePath,
 			});
+			// TODO: handle case when a function is called in a function declaration code block
 
 			subModules.push(...codeBlocks);
 		}
