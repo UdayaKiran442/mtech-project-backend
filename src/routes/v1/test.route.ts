@@ -1,9 +1,13 @@
 import { Octokit } from "@octokit/core";
 import { Hono } from "hono";
 import connectToNeo4j from "../../config/neo4j.config";
+import { traverseDirectory } from "../../controller/github.controller";
 import { searchRepoFileInDB } from "../../repository/github.repository";
 import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.repository";
 import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
+import { resolvePaths } from "../../utils/path.utils";
+import { fetchFileNode, fetchFunctionCallsFromNode, fetchImportPathsFromNode, fetchImportsFromNode } from "../../utils/treesitterNodes.utils";
+import { buildSubModules } from "../../utils/treesitterV2.utils";
 
 const testRouter = new Hono();
 
@@ -69,6 +73,90 @@ RETURN other;`;
 testRouter.get("/test6", async (c) => {
 	const result = await fetchFileNodeDetailsService("src/index.ts");
 	return c.json({ success: true, result });
+});
+
+testRouter.get("/test7", async (c) => {
+	const result = await buildSubModules({
+		repoContext: {
+			branch: "main",
+			owner: "UdayaKiran442",
+			repo: "dummy-repository",
+			installationId: 131321944,
+		},
+		userId: "erf",
+		workspaceId: "workspace_1",
+	});
+	return c.json({ result });
+});
+
+testRouter.get("/test8", async (c) => {
+	const result = await traverseDirectory({
+		branch: "main",
+		owner: "UdayaKiran442",
+		repoName: "dummy-repository",
+		installationId: "131321944",
+		userId: "erf",
+		workspaceId: "workspace_1",
+	});
+	return c.json({ result });
+});
+
+testRouter.get("/test9", async (c) => {
+	const { node, decodedString } = await fetchFileNode({
+		repoContext: {
+			branch: "main",
+			owner: "UdayaKiran442",
+			repo: "dummy-repository",
+			installationId: 131321944,
+		},
+		filePath: "src/index.ts",
+	});
+	const functionCalls = node.descendantsOfType("call_expression");
+	const result = await fetchFunctionCallsFromNode({
+		decodedString,
+		filePath: "src/index.ts",
+		functionCalls,
+	});
+	const importNodes = node.descendantsOfType("import_statement");
+	const imports = fetchImportsFromNode({
+		importNodes,
+	});
+	const importPaths = fetchImportPathsFromNode({
+		importNodes,
+	});
+	type ResolvedImport = {
+		functionName: string;
+		resolvedPath: string;
+	};
+
+	const resolvedImportPaths: ResolvedImport[] = [];
+
+	importPaths.forEach((importPath, i) => {
+		// "import { add, sub as minus } from './utils'" -> "add, sub as minus"
+		const namedImports = imports[i].match(/\{([^}]*)\}/)?.[1] ?? "";
+		// "import foo from './x'" -> default import
+		const defaultImport = imports[i].match(/^import\s+([A-Za-z_$][\w$]*)/)?.[1];
+
+		const functionNames = [
+			...(defaultImport ? [defaultImport] : []),
+			...namedImports
+				.split(",")
+				.map((name) => name.trim())
+				.filter(Boolean)
+				// for "sub as minus", the local name used in calls is "minus"
+				// biome-ignore lint/style/noNonNullAssertion: <>
+				.map((name) => name.split(/\s+as\s+/).pop()!),
+		];
+
+		const resolvedPath = resolvePaths("src/index.ts", importPath);
+
+		for (const functionName of functionNames) {
+			resolvedImportPaths.push({ functionName, resolvedPath });
+		}
+	});
+	const finalResult = result.filter((r) => resolvedImportPaths.find((impPath) => impPath.functionName === r.name));
+
+	return c.json({ finalResult, resolvedImportPaths });
 });
 
 export default testRouter;

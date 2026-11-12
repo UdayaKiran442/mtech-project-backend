@@ -11,14 +11,16 @@ import {
 	ProcessFileContentError,
 	TraverseDirectoryError,
 } from "../exceptions/github.exceptions";
+import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
 import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
 import { addParsedRepoToDB, checkIfRepoParsedInDB, insertRepoFileToDB } from "../repository/github.repository";
 import type { IAccessibleRepositoriesSchema, ICheckIfRepoParsedSchema, IGetRepositoryBranchesSchema, IParsedRepositorySchema } from "../routes/v1/github.route";
-import { getAccessibleRepositories, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
-import type { IRepoFolder } from "../types/types";
-import { resolvePaths } from "../utils/path.utils";
 import { queryNeo4jService } from "../services/neo4j.service";
-import { QueryNeo4jServiceError } from "../exceptions/neo4j.exceptions";
+import { getAccessibleRepositoriesService, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
+import type { IRepoContext, IRepoFolder } from "../types/types";
+import { resolvePaths } from "../utils/path.utils";
+import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
+import { buildSubModules } from "../utils/treesitterV2.utils";
 
 const limit = pLimit(10);
 
@@ -26,9 +28,18 @@ const transpiler = new Bun.Transpiler({
 	target: "bun",
 });
 
+/**
+ * 
+ * @param payload 
+ * @returns All accessible repositories for the given installation ID
+ * @description
+ * - Function takes installation ID as input.
+ * - It fetches all accessible repositories for the given installation ID from Octokit service.
+ * - It returns the list of accessible repositories.
+ */
 export async function fetchAccessibleRepositories(payload: IAccessibleRepositoriesSchema) {
 	try {
-		return await getAccessibleRepositories(Number(payload.installationId));
+		return await getAccessibleRepositoriesService(Number(payload.installationId));
 	} catch (error) {
 		if (error instanceof GetAccessibleRepositoriesServiceError) {
 			throw error;
@@ -39,6 +50,13 @@ export async function fetchAccessibleRepositories(payload: IAccessibleRepositori
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @returns Returns all the branches of the repository
+ * @description
+ * - Get all branches present in the repository
+ */
 export async function getRepositoryBranches(payload: IGetRepositoryBranchesSchema) {
 	try {
 		return await getRepositoryBranchesService({
@@ -56,6 +74,15 @@ export async function getRepositoryBranches(payload: IGetRepositoryBranchesSchem
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @returns boolean value
+ * @description
+ * - This function is to check if repo and the chosen branch is parsed or
+ * - Calls database function to check if the repo and branch is parsed or not
+ * - Returns boolean value
+ */
 export async function checkIfRepoParsed(payload: ICheckIfRepoParsedSchema) {
 	try {
 		return await checkIfRepoParsedInDB(payload);
@@ -72,6 +99,22 @@ export async function checkIfRepoParsed(payload: ICheckIfRepoParsedSchema) {
 // create a hash map to store file path and boolean value to check if the file is already parsed or not
 const fileMap: Record<string, boolean> = {};
 
+/**
+ * Parses the repository and its files.
+ * @param payload - The payload containing the repository information.
+ * @returns A promise resolving to the parsed repository.
+ * @description
+ * - Function for parsing the repository and creating a knowledge graph of the repository.
+ * - It fetches all files present in the repository using GitHub API.
+ * - For each file, it checks if the file is already parsed, if yes, it skips the file.
+ * - If the file is not parsed, it fetches the file content, code, imports and other metadata.
+ * - It creates a node for the file in neo4j database.
+ * - It checks if the file has imports, if yes, it processes each import recursively.
+ * - It creates a relationship between the file and the imported file in neo4j database.
+ * - It adds the file path to the map with value true to indicate that the file is parsed.
+ * - After processing all files, it adds the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database.
+ * - After processing all files, it clears the file map to free up memory.
+ */
 export async function parseRepository(payload: IParsedRepositorySchema) {
 	try {
 		// fetch all files in the repository
@@ -91,6 +134,25 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 		}
 		// after processing all files, add the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database
 		const [newParsedRepo, _] = await Promise.all([addParsedRepoToDB(payload), insertAllFiles(payload, allFiles)]);
+		// after processing all files, clear the file map to free up memory
+		for (const key in fileMap) {
+			delete fileMap[key];
+		}
+		// process sub modules
+		const graph = await buildModuleGraph({
+			branch: payload.branch,
+			owner: payload.owner,
+			repo: payload.repoName,
+			installationId: Number(payload.installationId),
+			entryPath: "src/index.ts",
+		});
+		const subModules = await toKnowledgeGraph(graph, {
+			branch: payload.branch,
+			owner: payload.owner,
+			repo: payload.repoName,
+			installationId: Number(payload.installationId),
+		});
+		// insert sub modules into the database in a new table called parsed_repo_sub_modules
 		return newParsedRepo;
 	} catch (error) {
 		if (
@@ -146,6 +208,20 @@ export async function insertAllFiles(payload: IParsedRepositorySchema, files: st
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @param filePath 
+ * @returns void
+ * @description
+ * - Function is to process the file and store in neo4j database.
+ * - It checks if file is already parsed, if yes, it skips the file.
+ * - If file is not parsed, it fetches the file content, code, imports and other metadata.
+ * - It creates a node for the file in neo4j database.
+ * - It checks if the file has imports, if yes, it processes each import recursively.
+ * - It creates a relationship between the file and the imported file in neo4j database.
+ * - It adds the file path to the map with value true to indicate that the file is parsed.
+ */
 export async function processFileContent(payload: IParsedRepositorySchema, filePath: string) {
 	try {
 		console.log(`Processing content for file: ${filePath}`);
@@ -235,8 +311,15 @@ export async function processFileContent(payload: IParsedRepositorySchema, fileP
 	}
 }
 
+/**
+ * 
+ * @param payload 
+ * @param filePath 
+ * @returns code, imports and othe metadata of the file
+ */
 export async function getFileContent(payload: IParsedRepositorySchema, filePath: string) {
 	try {
+		// get file content
 		const fileContent = await getFileContentService({
 			branch: payload.branch,
 			owner: payload.owner,
@@ -246,11 +329,13 @@ export async function getFileContent(payload: IParsedRepositorySchema, filePath:
 		});
 		const decodedContent = Buffer.from(fileContent.content, "base64").toString("utf-8");
 		const code = transpiler.transformSync(decodedContent, "ts");
+		// fetch imports from the file and filter out only project relative imports (starting with ./, ../ or @/)
 		const { imports } = transpiler.scan(code);
 		const fileImportRegex = /^(\.\/|\.\.\/|@\/)/;
 		const filteredImports = imports.length > 0 ? imports.filter((imp) => fileImportRegex.test(imp.path)) : [];
 		const importPaths: string[] = [];
 		if (filteredImports.length > 0) {
+			// resolve the import paths to absolute paths and store them in an array
 			for (const imp of filteredImports) {
 				const normalisedPath = resolvePaths(filePath, imp.path);
 				importPaths.push(normalisedPath);
@@ -266,8 +351,21 @@ export async function getFileContent(payload: IParsedRepositorySchema, filePath:
 	}
 }
 
+/**
+ * Traverses a directory in the GitHub repository and returns a list of all file paths.
+ * @param payload The repository context.
+ * @param path The path to the directory to traverse.
+ * @returns A promise that resolves to an array of file paths.
+ * @description
+ * - Function takes repository context and an option path to traverse.
+ * - Fetches all files present in the repository using GitHub API.
+ * - If a folder is encountered, it recursively traverses that folder to fetch its contents.
+ * - It passes the folder path as an optional parameter(path) to the function to fetch its contents.
+ * - Filter out the unnecessary files like .gitignore, dist, build, package.json, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lock, and files with extensions .md, .json, .yml, .yaml, .env.
+ */
 export async function traverseDirectory(payload: IParsedRepositorySchema, path?: string): Promise<string[]> {
 	try {
+		// fetch the contents of the repository at the given path (or root if no path is provided)
 		const contents = path
 			? await getRepositoryContentService(
 					{
@@ -287,7 +385,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 
 		const files: string[] = [];
 
-		// return even file names along with the path of the file
+		// concurrently process each item, return if it is a valid file or recursively traverse if it is a directory
 		const tasks = contents.map((item: IRepoFolder) =>
 			limit(async () => {
 				if (
@@ -320,6 +418,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 			}),
 		);
 
+		// wait for all tasks to complete and flatten the results into a single array of file paths
 		const results = await Promise.all(tasks);
 
 		for (const result of results) {
@@ -333,4 +432,13 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 		}
 		throw new TraverseDirectoryError("Failed to traverse directory", { cause: (error as Error).message });
 	}
+}
+
+export async function fetchSubModulesFromRepo(payload: { repoContext: IRepoContext }) {
+	const subModules = await buildSubModules({
+		repoContext: payload.repoContext,
+		userId: "erf",
+		workspaceId: "workspace_1",
+	});
+	return subModules;
 }
