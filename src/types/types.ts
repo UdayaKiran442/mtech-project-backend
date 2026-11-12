@@ -1,3 +1,5 @@
+import type { CALL_EXPRESSION, CLASS_DECLARATION, FUNCTION_DECLARATION } from "../constants/subModuleType.constants";
+
 export type AuthContext = {
 	Variables: {
 		user: {
@@ -35,38 +37,58 @@ export type IUpdateUserPayload = {
 // };
 
 export type IRepoFolder = {
-    type: "dir" | "file" | "submodule" | "symlink";
-    size: number;
-    name: string;
-    path: string;
-    sha: string;
-    url: string;
-    git_url: string | null;
-    html_url: string | null;
-    download_url: string | null;
-    _links: {
-        git: string | null;
-        html: string | null;
-        self: string;
-    };
-}
-
+	type: "dir" | "file" | "submodule" | "symlink";
+	size: number;
+	name: string;
+	path: string;
+	sha: string;
+	url: string;
+	git_url: string | null;
+	html_url: string | null;
+	download_url: string | null;
+	_links: {
+		git: string | null;
+		html: string | null;
+		self: string;
+	};
+};
 
 export type IRepoFileContent = {
-    type: "dir" | "file" | "submodule" | "symlink";
-    size: number;
-    name: string;
-    path: string;
-    content: string;
+	type: "dir" | "file" | "submodule" | "symlink";
+	size: number;
+	name: string;
+	path: string;
+	content: string;
 	encoding: string;
-    sha: string;
-    url: string;
-    git_url: string | null;
-    html_url: string | null;
-    download_url: string | null;
-    _links: {
-        git: string | null;
-        html: string | null;
-        self: string;
-    };
-}
+	sha: string;
+	url: string;
+	git_url: string | null;
+	html_url: string | null;
+	download_url: string | null;
+	_links: {
+		git: string | null;
+		html: string | null;
+		self: string;
+	};
+};
+
+export type IRepoContext = {
+	installationId: number;
+	owner: string;
+	repo: string;
+	branch: string;
+};
+
+export type ISubModule = {
+	id: string;
+	name: string;
+	type: ISubModuleType;
+	code: string;
+	filePath: string;
+	startIndex: number;
+	endIndex: number;
+	startLine: number;
+	endLine: number;
+};
+
+export type ISubModuleType = typeof FUNCTION_DECLARATION | typeof CLASS_DECLARATION | typeof CALL_EXPRESSION;
