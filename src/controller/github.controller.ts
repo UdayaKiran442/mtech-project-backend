@@ -20,7 +20,7 @@ import { getAccessibleRepositoriesService, getFileContentService, getRepositoryB
 import type { IRepoContext, IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
 import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
-import { buildSubModules } from "../utils/treesitterV2.utils";
+import { extractSubModules } from "../utils/treesitterV2.utils";
 
 const limit = pLimit(10);
 
@@ -29,8 +29,8 @@ const transpiler = new Bun.Transpiler({
 });
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @returns All accessible repositories for the given installation ID
  * @description
  * - Function takes installation ID as input.
@@ -51,8 +51,8 @@ export async function fetchAccessibleRepositories(payload: IAccessibleRepositori
 }
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @returns Returns all the branches of the repository
  * @description
  * - Get all branches present in the repository
@@ -75,8 +75,8 @@ export async function getRepositoryBranches(payload: IGetRepositoryBranchesSchem
 }
 
 /**
- * 
- * @param payload 
+ *
+ * @param payload
  * @returns boolean value
  * @description
  * - This function is to check if repo and the chosen branch is parsed or
@@ -139,19 +139,18 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			delete fileMap[key];
 		}
 		// process sub modules
-		const graph = await buildModuleGraph({
-			branch: payload.branch,
-			owner: payload.owner,
-			repo: payload.repoName,
-			installationId: Number(payload.installationId),
-			entryPath: "src/index.ts",
+		const { resolvedImportPaths, subModules } = await extractSubModules({
+			repoContext: {
+				branch: payload.branch,
+				installationId: Number(payload.installationId),
+				owner: payload.owner,
+				repo: payload.repoName,
+			},
+			userId: payload.userId,
+			workspaceId: payload.workspaceId,
 		});
-		const subModules = await toKnowledgeGraph(graph, {
-			branch: payload.branch,
-			owner: payload.owner,
-			repo: payload.repoName,
-			installationId: Number(payload.installationId),
-		});
+		// for every sub module create a node in neo4j
+		// resolvedImportPaths for creating relationships between edges
 		// insert sub modules into the database in a new table called parsed_repo_sub_modules
 		return newParsedRepo;
 	} catch (error) {
@@ -209,9 +208,9 @@ export async function insertAllFiles(payload: IParsedRepositorySchema, files: st
 }
 
 /**
- * 
- * @param payload 
- * @param filePath 
+ *
+ * @param payload
+ * @param filePath
  * @returns void
  * @description
  * - Function is to process the file and store in neo4j database.
@@ -312,9 +311,9 @@ export async function processFileContent(payload: IParsedRepositorySchema, fileP
 }
 
 /**
- * 
- * @param payload 
- * @param filePath 
+ *
+ * @param payload
+ * @param filePath
  * @returns code, imports and othe metadata of the file
  */
 export async function getFileContent(payload: IParsedRepositorySchema, filePath: string) {
@@ -435,7 +434,7 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 }
 
 export async function fetchSubModulesFromRepo(payload: { repoContext: IRepoContext }) {
-	const subModules = await buildSubModules({
+	const subModules = await extractSubModules({
 		repoContext: payload.repoContext,
 		userId: "erf",
 		workspaceId: "workspace_1",

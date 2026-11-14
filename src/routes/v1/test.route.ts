@@ -7,7 +7,7 @@ import { searchKnowledgeBaseFilesInDB } from "../../repository/knowledgeBase.rep
 import { fetchFileNodeDetailsService } from "../../services/neo4j.service";
 import { resolvePaths } from "../../utils/path.utils";
 import { fetchFileNode, fetchFunctionCallsFromNode, fetchImportPathsFromNode, fetchImportsFromNode } from "../../utils/treesitterNodes.utils";
-import { buildSubModules } from "../../utils/treesitterV2.utils";
+import { extractSubModules } from "../../utils/treesitterV2.utils";
 
 const testRouter = new Hono();
 
@@ -76,7 +76,7 @@ testRouter.get("/test6", async (c) => {
 });
 
 testRouter.get("/test7", async (c) => {
-	const result = await buildSubModules({
+	const result = await extractSubModules({
 		repoContext: {
 			branch: "main",
 			owner: "UdayaKiran442",

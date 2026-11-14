@@ -10,7 +10,7 @@ type ResolvedImport = {
 	calledFilePath: string;
 };
 
-export async function buildSubModules(payload: { repoContext: IRepoContext; userId: string; workspaceId: string }) {
+export async function extractSubModules(payload: { repoContext: IRepoContext; userId: string; workspaceId: string }) {
 	try {
 		const subModules: ISubModule[] = [];
 		const resolvedImportPaths: ResolvedImport[] = [];
