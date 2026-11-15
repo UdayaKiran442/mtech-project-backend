@@ -169,6 +169,13 @@
       "when": 1794719160997,
       "tag": "0023_vengeful_the_spike",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794739468203,
+      "tag": "0024_breezy_exiles",
+      "breakpoints": true
     }
   ]
 }
