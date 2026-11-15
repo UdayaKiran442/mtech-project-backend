@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, primaryKey, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, primaryKey, serial, timestamp, unique, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
 	"users",
@@ -126,27 +126,29 @@ export const messages = pgTable(
 export const parsedRepos = pgTable(
 	"parsed_repos",
 	{
-		repoName: varchar("repo_name").primaryKey(),
+		parsedRepoId: serial("parsed_repo_id").primaryKey(),
+		owner: varchar("owner").notNull(),
+		repoName: varchar("repo_name").notNull(),
 		branch: varchar("branch").notNull(),
 		userId: varchar("user_id").notNull(),
 		workspaceId: varchar("workspace_id").notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
-	(parsedRepos) => [primaryKey({ name: "parsed_repos_pkey", columns: [parsedRepos.repoName, parsedRepos.userId, parsedRepos.branch, parsedRepos.workspaceId] })],
+	(t) => [unique("parsed_repos_unique").on(t.workspaceId, t.userId, t.owner, t.repoName, t.branch)],
 );
 
 export const parsedRepoFiles = pgTable(
 	"parsed_repo_files",
 	{
-		repoName: varchar("repo_name").notNull(),
-		branch: varchar("branch").notNull(),
-		userId: varchar("user_id").notNull(),
+		parsedRepoId: integer("parsed_repo_id")
+			.notNull()
+			.references(() => parsedRepos.parsedRepoId, { onDelete: "cascade" }),
 		filePath: varchar("file_path").notNull(),
 		fileName: varchar("file_name").notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
 	(parsedRepoFiles) => ({
-		parsedRepoFilesPrimaryKey: primaryKey({ name: "parsed_repo_files_pkey", columns: [parsedRepoFiles.repoName, parsedRepoFiles.userId, parsedRepoFiles.branch, parsedRepoFiles.filePath] }),
+		parsedRepoFilesPrimaryKey: primaryKey({ name: "parsed_repo_files_pkey", columns: [parsedRepoFiles.parsedRepoId, parsedRepoFiles.filePath] }),
 		fileNameIdx: index("file_name_idx").on(parsedRepoFiles.fileName),
 	}),
 );
@@ -166,12 +168,16 @@ export const codebotChat = pgTable(
 	}),
 );
 
-export const codebotMessages = pgTable("codebot_messages", {
-	codebotMessageId: varchar("codebot_message_id").primaryKey(),
-	codebotChatId: varchar("codebot_chat_id").notNull(),
-	prompt: varchar("prompt").notNull(),
-	response: varchar("response").notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (codebotMessages) => ({
-	codebotChatIdIdx: index("codebot_chat_id_idx_codebot_messages").on(codebotMessages.codebotChatId),
-}));
+export const codebotMessages = pgTable(
+	"codebot_messages",
+	{
+		codebotMessageId: varchar("codebot_message_id").primaryKey(),
+		codebotChatId: varchar("codebot_chat_id").notNull(),
+		prompt: varchar("prompt").notNull(),
+		response: varchar("response").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(codebotMessages) => ({
+		codebotChatIdIdx: index("codebot_chat_id_idx_codebot_messages").on(codebotMessages.codebotChatId),
+	}),
+);

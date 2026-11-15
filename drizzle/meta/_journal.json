@@ -162,6 +162,13 @@
       "when": 1789299041799,
       "tag": "0022_wooden_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794719160997,
+      "tag": "0023_vengeful_the_spike",
+      "breakpoints": true
     }
   ]
 }
