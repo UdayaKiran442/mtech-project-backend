@@ -1,5 +1,7 @@
 import type { Node } from "web-tree-sitter";
 import { FUNCTION_DECLARATION } from "../constants/subModuleType.constants";
+import { GetFileContentServiceError } from "../exceptions/octokit.exceptions";
+import { FetchFileNodeError } from "../exceptions/treeSitter.exceptions";
 import { getFileContentService } from "../services/octokit.service";
 import type { IRepoContext, ISubModule } from "../types/types";
 import parserInstance from "./parser.utils";
@@ -54,67 +56,62 @@ export async function fetchFileNode(payload: { repoContext: IRepoContext; filePa
 		const parser = await parserInstance();
 		const tree = parser.parse(decodedString);
 		if (!tree) {
-			throw new Error(`Failed to parse the file content for path: ${payload.filePath}`);
+			throw new FetchFileNodeError(`Failed to parse the file content for path: ${payload.filePath}`);
 		}
 		const node = tree.rootNode;
 		return { node, decodedString };
 	} catch (error) {
-		throw new Error(`Error fetching file node for path ${payload.filePath}: ${(error as Error).message}`);
+		if (error instanceof GetFileContentServiceError) {
+			throw error;
+		}
+		throw new FetchFileNodeError(`Error fetching file node for path ${payload.filePath}`, { cause: (error as Error).message });
 	}
 }
 
-export async function fetchFunctionDeclarationsFromNode(payload: { functionDeclarations: Node[]; decodedString: string; resolvedPath: string }) {
-	try {
-		return payload.functionDeclarations.map((funcNode) => {
-			const startIndex = funcNode.startIndex;
-			const endIndex = funcNode.endIndex;
-			const funcName = funcNode.childForFieldName("name")?.text || "anonymous";
-			const startLine = funcNode.startPosition.row + 1;
-			const endLine = funcNode.endPosition.row + 1;
-			console.log(`Function ${funcName} found from line ${startLine} to line ${endLine}`);
-			console.log(`Function name: ${funcName}, Start index: ${startIndex}, End index: ${endIndex}`);
-			const code = payload.decodedString.slice(startIndex, endIndex);
-			return {
-				id: `${payload.resolvedPath}#${funcName}`,
-				name: funcName,
-				code,
-				startIndex,
-				endIndex,
-				startLine,
-				endLine,
-				type: FUNCTION_DECLARATION as ISubModule["type"],
-				filePath: payload.resolvedPath,
-			};
-		});
-	} catch (error) {
-		throw new Error(`Error fetching function declarations from node: ${(error as Error).message}`);
-	}
+export function fetchFunctionDeclarationsFromNode(payload: { functionDeclarations: Node[]; decodedString: string; resolvedPath: string }) {
+	return payload.functionDeclarations.map((funcNode) => {
+		const startIndex = funcNode.startIndex;
+		const endIndex = funcNode.endIndex;
+		const funcName = funcNode.childForFieldName("name")?.text || "anonymous";
+		const startLine = funcNode.startPosition.row + 1;
+		const endLine = funcNode.endPosition.row + 1;
+		console.log(`Function ${funcName} found from line ${startLine} to line ${endLine}`);
+		console.log(`Function name: ${funcName}, Start index: ${startIndex}, End index: ${endIndex}`);
+		const code = payload.decodedString.slice(startIndex, endIndex);
+		return {
+			id: `${payload.resolvedPath}#${funcName}`,
+			name: funcName,
+			code,
+			startIndex,
+			endIndex,
+			startLine,
+			endLine,
+			type: FUNCTION_DECLARATION as ISubModule["type"],
+			filePath: payload.resolvedPath,
+		};
+	});
 }
 
-export async function fetchFunctionCallsFromNode(payload: { functionCalls: Node[]; decodedString: string; filePath: string }) {
-	try {
-		return payload.functionCalls.map((callNode) => {
-			const startIndex = callNode.startIndex;
-			const endIndex = callNode.endIndex;
-			const funcName = callNode.childForFieldName("function")?.text || "anonymous";
-			const startLine = callNode.startPosition.row + 1;
-			const endLine = callNode.endPosition.row + 1;
-			console.log(`Function call ${funcName} found from line ${startLine} to line ${endLine}`);
-			console.log(`Function call name: ${funcName}, Start index: ${startIndex}, End index: ${endIndex}`);
-			const code = payload.decodedString.slice(startIndex, endIndex);
-			return {
-				id: `${payload.filePath}#${funcName}`,
-				name: funcName,
-				code,
-				startIndex,
-				endIndex,
-				startLine,
-				endLine,
-				type: "call_expression" as ISubModule["type"],
-				filePath: payload.filePath,
-			};
-		});
-	} catch (error) {
-		throw new Error(`Error fetching function calls from node: ${(error as Error).message}`);
-	}
+export function fetchFunctionCallsFromNode(payload: { functionCalls: Node[]; decodedString: string; filePath: string }) {
+	return payload.functionCalls.map((callNode) => {
+		const startIndex = callNode.startIndex;
+		const endIndex = callNode.endIndex;
+		const funcName = callNode.childForFieldName("function")?.text || "anonymous";
+		const startLine = callNode.startPosition.row + 1;
+		const endLine = callNode.endPosition.row + 1;
+		console.log(`Function call ${funcName} found from line ${startLine} to line ${endLine}`);
+		console.log(`Function call name: ${funcName}, Start index: ${startIndex}, End index: ${endIndex}`);
+		const code = payload.decodedString.slice(startIndex, endIndex);
+		return {
+			id: `${payload.filePath}#${funcName}`,
+			name: funcName,
+			code,
+			startIndex,
+			endIndex,
+			startLine,
+			endLine,
+			type: "call_expression" as ISubModule["type"],
+			filePath: payload.filePath,
+		};
+	});
 }

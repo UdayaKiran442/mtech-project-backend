@@ -20,6 +20,7 @@ import { getAccessibleRepositoriesService, getFileContentService, getRepositoryB
 import type { IRepoContext, IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
 import { extractSubModules } from "../utils/treesitterV2.utils";
+import { ExtractSubModulesError, FetchFileNodeError } from "../exceptions/treeSitter.exceptions";
 
 const limit = pLimit(10);
 
@@ -164,7 +165,12 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			error instanceof ProcessFileContentError ||
 			error instanceof AddParsedRepoToDBError ||
 			error instanceof InsertAllFilesError ||
-			error instanceof InsertRepoFileToDBError
+			error instanceof InsertRepoFileToDBError ||
+			error instanceof GetRepositoryContentServiceError ||
+			error instanceof TraverseDirectoryError ||
+			error instanceof GetFileContentServiceError ||
+			error instanceof FetchFileNodeError ||
+			error instanceof ExtractSubModulesError
 		) {
 			throw error;
 		}
@@ -432,13 +438,4 @@ export async function traverseDirectory(payload: IParsedRepositorySchema, path?:
 		}
 		throw new TraverseDirectoryError("Failed to traverse directory", { cause: (error as Error).message });
 	}
-}
-
-export async function fetchSubModulesFromRepo(payload: { repoContext: IRepoContext }) {
-	const subModules = await extractSubModules({
-		repoContext: payload.repoContext,
-		userId: "erf",
-		workspaceId: "workspace_1",
-	});
-	return subModules;
 }

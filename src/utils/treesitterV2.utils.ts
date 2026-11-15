@@ -1,5 +1,8 @@
 import { CALL_EXPRESSION, FUNCTION_DECLARATION, IMPORT_STATEMENT } from "../constants/subModuleType.constants";
 import { traverseDirectory } from "../controller/github.controller";
+import { TraverseDirectoryError } from "../exceptions/github.exceptions";
+import { GetFileContentServiceError, GetRepositoryContentServiceError } from "../exceptions/octokit.exceptions";
+import { ExtractSubModulesError, FetchFileNodeError } from "../exceptions/treeSitter.exceptions";
 import type { IRepoContext, ISubModule } from "../types/types";
 import { resolvePaths } from "./path.utils";
 import { fetchFileNode, fetchFunctionCallsFromNode, fetchFunctionDeclarationsFromNode, fetchImportPathsFromNode, fetchImportsFromNode } from "./treesitterNodes.utils";
@@ -33,7 +36,7 @@ export async function extractSubModules(payload: { repoContext: IRepoContext; us
 			if (functionDeclarations.length === 0) {
 				continue; // Skip files without function declarations
 			}
-			const codeBlocks = await fetchFunctionDeclarationsFromNode({
+			const codeBlocks = fetchFunctionDeclarationsFromNode({
 				decodedString,
 				functionDeclarations,
 				resolvedPath: filePath,
@@ -52,7 +55,7 @@ export async function extractSubModules(payload: { repoContext: IRepoContext; us
 			if (functionCalls.length === 0) {
 				continue;
 			}
-			const result = await fetchFunctionCallsFromNode({
+			const result = fetchFunctionCallsFromNode({
 				decodedString,
 				filePath,
 				functionCalls,
@@ -94,6 +97,9 @@ export async function extractSubModules(payload: { repoContext: IRepoContext; us
 
 		return { subModules, resolvedImportPaths };
 	} catch (error) {
-		throw new Error(`Failed to build module graph: ${(error as Error).message}`);
+		if (error instanceof GetRepositoryContentServiceError || error instanceof TraverseDirectoryError || error instanceof GetFileContentServiceError || error instanceof FetchFileNodeError) {
+			throw error;
+		}
+		throw new ExtractSubModulesError("Failed to build module graph", { cause: (error as Error).message  });
 	}
 }

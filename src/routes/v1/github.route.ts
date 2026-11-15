@@ -14,12 +14,12 @@ import {
 	GetRepositoryBranchesError,
 	InsertAllFilesError,
 	InsertRepoFileToDBError,
-	ParseRepositoryError,
 	ProcessFileContentError,
 	TraverseDirectoryError,
 } from "../../exceptions/github.exceptions";
 import { QueryNeo4jServiceError } from "../../exceptions/neo4j.exceptions";
-import { GetAccessibleRepositoriesServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../../exceptions/octokit.exceptions";
+import { GetAccessibleRepositoriesServiceError, GetFileContentServiceError, GetRepositoryBranchesServiceError, GetRepositoryContentServiceError } from "../../exceptions/octokit.exceptions";
+import { ExtractSubModulesError, FetchFileNodeError } from "../../exceptions/treeSitter.exceptions";
 import { authMiddleware } from "../../middleware/authentication.middleware";
 
 const githubRoute = new Hono();
@@ -212,14 +212,18 @@ githubRoute.post("/parse-repository", authMiddleware, async (c) => {
 			return c.json({ success: false, error: errMessage[0], message: errMessage[0].message }, 401);
 		}
 		if (
-			error instanceof AddParsedRepoToDBError ||
 			error instanceof GetRepositoryContentServiceError ||
 			error instanceof TraverseDirectoryError ||
 			error instanceof QueryNeo4jServiceError ||
 			error instanceof ProcessFileContentError ||
-			error instanceof InsertRepoFileToDBError ||
+			error instanceof AddParsedRepoToDBError ||
 			error instanceof InsertAllFilesError ||
-			error instanceof ParseRepositoryError
+			error instanceof InsertRepoFileToDBError ||
+			error instanceof GetRepositoryContentServiceError ||
+			error instanceof TraverseDirectoryError ||
+			error instanceof GetFileContentServiceError ||
+			error instanceof FetchFileNodeError ||
+			error instanceof ExtractSubModulesError
 		) {
 			return c.json({ success: false, message: error.message, error: error.cause }, 400);
 		}
