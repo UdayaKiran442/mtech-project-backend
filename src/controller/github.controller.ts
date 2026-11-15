@@ -19,7 +19,6 @@ import { queryNeo4jService } from "../services/neo4j.service";
 import { getAccessibleRepositoriesService, getFileContentService, getRepositoryBranchesService, getRepositoryContentService } from "../services/octokit.service";
 import type { IRepoContext, IRepoFolder } from "../types/types";
 import { resolvePaths } from "../utils/path.utils";
-import { buildModuleGraph, toKnowledgeGraph } from "../utils/treesitter.utils";
 import { extractSubModules } from "../utils/treesitterV2.utils";
 
 const limit = pLimit(10);
@@ -112,7 +111,7 @@ const fileMap: Record<string, boolean> = {};
  * - It checks if the file has imports, if yes, it processes each import recursively.
  * - It creates a relationship between the file and the imported file in neo4j database.
  * - It adds the file path to the map with value true to indicate that the file is parsed.
- * - After processing all files, it adds the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database.
+ * - After processing all files, it adds the repository to the parsed_repos table in the database and files present in the repository along with parsedRepoId to the parsed_repo_files table.
  * - After processing all files, it clears the file map to free up memory.
  */
 export async function parseRepository(payload: IParsedRepositorySchema) {
@@ -133,7 +132,11 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 			await processFileContent(payload, filePath);
 		}
 		// after processing all files, add the repository to the parsed_repos table in the database and files present in the repository to the parsed_repo_files table in the database
-		const [newParsedRepo, _] = await Promise.all([addParsedRepoToDB(payload), insertAllFiles(payload, allFiles)]);
+		const newParsedRepo = await addParsedRepoToDB(payload);
+		await insertAllFiles({
+			files: allFiles,
+			parsedRepoId: newParsedRepo.parsedRepoId,
+		});
 		// after processing all files, clear the file map to free up memory
 		for (const key in fileMap) {
 			delete fileMap[key];
@@ -174,11 +177,11 @@ export async function parseRepository(payload: IParsedRepositorySchema) {
 	}
 }
 
-export async function insertAllFiles(payload: IParsedRepositorySchema, files: string[]) {
+export async function insertAllFiles(payload: { files: string[]; parsedRepoId: number }) {
 	try {
 		const limit = pLimit(10); // max 10 concurrent DB inserts
 
-		const promises = files.map((file) =>
+		const promises = payload.files.map((file) =>
 			limit(async () => {
 				const fileNameMatch = file.match(/[^/\\]+$/);
 
@@ -189,11 +192,9 @@ export async function insertAllFiles(payload: IParsedRepositorySchema, files: st
 				}
 
 				await insertRepoFileToDB({
-					branch: payload.branch,
+					parsedRepoId: payload.parsedRepoId,
 					fileName,
 					filePath: file,
-					repoName: payload.repoName,
-					userId: payload.userId,
 				});
 			}),
 		);

@@ -10,7 +10,15 @@ export async function checkIfRepoParsedInDB(payload: ICheckIfRepoParsedSchema) {
 		const repo = await db
 			.select()
 			.from(parsedRepos)
-			.where(and(eq(parsedRepos.repoName, payload.repoName), eq(parsedRepos.branch, payload.branch), eq(parsedRepos.userId, payload.userId), eq(parsedRepos.workspaceId, payload.workspaceId)));
+			.where(
+				and(
+					eq(parsedRepos.repoName, payload.repoName),
+					eq(parsedRepos.branch, payload.branch),
+					eq(parsedRepos.userId, payload.userId),
+					eq(parsedRepos.workspaceId, payload.workspaceId),
+					eq(parsedRepos.owner, payload.owner),
+				),
+			);
 		return repo.length > 0;
 	} catch (error) {
 		throw new CheckIfRepoParsedInDBError("Failed to check if repository is parsed in DB", { cause: (error as Error).message });
@@ -23,22 +31,21 @@ export async function addParsedRepoToDB(payload: IParsedRepositorySchema) {
 			repoName: payload.repoName,
 			branch: payload.branch,
 			userId: payload.userId,
+			owner: payload.owner,
 			workspaceId: payload.workspaceId,
 			createdAt: new Date(),
 		};
-		await db.insert(parsedRepos).values(insertPayload);
-		return insertPayload;
+		const [newRepo] = await db.insert(parsedRepos).values(insertPayload).returning();
+		return newRepo;
 	} catch (error) {
 		throw new AddParsedRepoToDBError("Failed to add parsed repository to DB", { cause: (error as Error).message });
 	}
 }
 
-export async function insertRepoFileToDB(payload: { repoName: string; branch: string; userId: string; filePath: string; fileName: string }) {
+export async function insertRepoFileToDB(payload: { parsedRepoId: number; filePath: string; fileName: string }) {
 	try {
 		const insertPayload = {
-			repoName: payload.repoName,
-			branch: payload.branch,
-			userId: payload.userId,
+			parsedRepoId: payload.parsedRepoId,
 			filePath: payload.filePath,
 			fileName: payload.fileName,
 			createdAt: new Date(),
@@ -58,11 +65,11 @@ export async function searchRepoFileInDB(payload: ISearchFilesSchema) {
 			.where(
 				and(
 					ilike(parsedRepoFiles.fileName, `%${payload.searchString}%`),
-					eq(parsedRepoFiles.userId, payload.userId),
-					eq(parsedRepoFiles.repoName, payload.repoName),
-					eq(parsedRepoFiles.branch, payload.branch),
+					eq(parsedRepos.repoName, payload.repoName),
+					eq(parsedRepos.branch, payload.branch),
 				),
-			);
+			)
+			.leftJoin(parsedRepos, eq(parsedRepoFiles.parsedRepoId, parsedRepos.parsedRepoId));
 	} catch (error) {
 		throw new SearchRepoFileInDBError("Failed to search repository file in DB", { cause: (error as Error).message });
 	}

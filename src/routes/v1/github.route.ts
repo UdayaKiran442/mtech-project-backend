@@ -155,6 +155,7 @@ const CheckIfRepoParsedSchema = z.object({
 	repoName: z.string(),
 	branch: z.string(),
 	workspaceId: z.string(),
+	owner: z.string(),
 });
 
 export type ICheckIfRepoParsedSchema = z.infer<typeof CheckIfRepoParsedSchema> & { userId: string };

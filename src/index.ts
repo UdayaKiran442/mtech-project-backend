@@ -1,15 +1,13 @@
+import type { WebSocketData } from "@socket.io/bun-engine";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-
-import v1Router from "./routes";
-
-import { generateNanoId } from "./utils/nano.utils";
-import engine from "./config/websocket.config";
-import type { WebSocketData } from "@socket.io/bun-engine";
-import { getRepositoryContentService } from "./services/octokit.service";
 import connectToNeo4j from "./config/neo4j.config";
-import { getFileContent, insertAllFiles } from "./controller/github.controller";
+import engine from "./config/websocket.config";
+import { getFileContent } from "./controller/github.controller";
+import v1Router from "./routes";
 import { queryNeo4jService } from "./services/neo4j.service";
+import { getRepositoryContentService } from "./services/octokit.service";
+import { generateNanoId } from "./utils/nano.utils";
 
 const app = new Hono();
 
@@ -60,6 +58,7 @@ app.get("/test4", async (c) => {
 			repoName: "dummy-repository",
 			installationId: "131321944",
 			userId: "erf",
+			workspaceId: "wr"
 		},
 		"src/utls/utils.ts",
 	);
@@ -76,22 +75,6 @@ app.get("/test5", async (c) => {
 		content: "console.log('Hello, Neo4j controller!')",
 	});
 	return c.json({ success: true, message: "File content stored in Neo4j successfully" });
-});
-
-app.get("/test6", async (c) => {
-	const files = [
-        "src/index.ts",
-        "src/utls/utils.ts",
-        "sub/sub.ts"
-    ]
-	await insertAllFiles({
-		branch: "main",
-		owner: "UdayaKiran442",
-		repoName: "dummy-repository",
-		installationId: "131321944",
-		userId: "erf",
-	}, files);
-	return c.json({ success: true });
 });
 
 
