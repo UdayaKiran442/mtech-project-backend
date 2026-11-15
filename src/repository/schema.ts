@@ -181,3 +181,14 @@ export const codebotMessages = pgTable(
 		codebotChatIdIdx: index("codebot_chat_id_idx_codebot_messages").on(codebotMessages.codebotChatId),
 	}),
 );
+
+export const subModules = pgTable("sub_modules", {
+	subModuleId: serial("sub_module_id").primaryKey(),
+	parsedRepoId: integer("parsed_repo_id")
+		.notNull()
+		.references(() => parsedRepos.parsedRepoId, { onDelete: "cascade" }),
+	filePath: varchar("file_path").notNull(),
+	moduleName: varchar("module_name").notNull(),
+	moduleType: varchar("module_type").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
